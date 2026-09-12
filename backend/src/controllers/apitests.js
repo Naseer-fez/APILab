@@ -23,14 +23,22 @@ const apitestsController = async (req, res) => {
     const server = data[1][serverkey];
     // console.log("Server is: ", server);
     delete data[1][serverkey]
-    const outputrate = await apitests(server.link, server.method, data[1], server.requests);
+    const outputrate = await apitests(
+        {
+            link: server.link,
+            method: server.method,
+            data: data[1],
+            headers: server.headers,
+            requests: server.requests
+        }
+    );
     return res.status(data[2]).json({
         message: data[1],
         data: outputrate
     });
 }
 
-const sendrequest = async (link, method, obj) => {
+const sendrequest = async (link, method, headers, obj) => {
     // Now we will send the request to the link with the method and the data/
     // We will use the fetch API to send the request
     // console.log("Sending request to: ", link);
@@ -44,12 +52,12 @@ const sendrequest = async (link, method, obj) => {
             Object.entries(obj).forEach(([key, value]) => {
                 url.searchParams.append(key, value);
             });
-            result = await fetch(url, { method: 'GET' });
+            result = await fetch(url, { method: 'GET', headers: headers });
         } else {
             result = await fetch(link, {
                 method: method.toUpperCase(),
                 body: JSON.stringify(obj),
-                headers: { 'Content-Type': 'application/json' }
+                headers: headers
             });
         }
 
@@ -88,24 +96,25 @@ const sendrequest = async (link, method, obj) => {
 //for now it will be sending requests through node 
 
 //Need to work on this combination and how the requests are suppoed to go 
-const apitests = async (link, method, data, requests) => {
+const apitests = async ({ link, method, data, headers, requests }) => {
 
     const promises = [];
     // console.log("Data is: ", data);
     let i = 0;
 
     while (i < requests) {
-        {
-            for (const combination of generatecombinations(data)) {
-                console.log("Combination is: ", combination);
-                if (i >= requests) {
-                    break;
-                }
-                i++;
-                promises.push(sendrequest(link, method, combination));
-                // break;
-
+        let count = 0;
+        for (const combination of generatecombinations(data)) {
+            // console.log("Combination is: ", combination);
+            if (i >= requests) {
+                break;
             }
+            i++;
+            count++;
+            promises.push(sendrequest(link, method, headers, combination));
+        }
+        if (count === 0) {
+            break;
         }
     }
 
@@ -115,11 +124,15 @@ const apitests = async (link, method, data, requests) => {
 }
 
 const resultsparser = (results) => {
+    //Now lets work on this 
+    // console.log("Results are: ", results);
     const successfulRequests = results.filter(response => response.ok).length;
     const failedRequests = results.length - successfulRequests;
+    // console.log("Results are: ", results);
     const body = {
         successful: successfulRequests,
-        failed: failedRequests
+        failed: failedRequests,
+        
     };
     console.log("Results are: ", body);
     return body;

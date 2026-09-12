@@ -19,6 +19,13 @@ const parsebody = (body) => {
          * by the endpoint so that is why this option is given it makes sure that we dont fill the worng data
          */
     }
+    var headers = body.headers ?? gibberish;
+    if (headers === gibberish) {
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        };//Now we need to give the default headers so that we can send the request to the server
+    }
     // NOw lets get the data poitn and the methods
     const method = body.method.toUpperCase() ?? 'GET';
     const validmethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
@@ -42,6 +49,7 @@ const parsebody = (body) => {
     output[1][gibberish + "server" + gibberish] = {
         "link": link,
         "method": method,
+        "headers": headers,
         "requests": body.requests ?? 100
     }
 
@@ -129,12 +137,12 @@ const validatetherange = (objs) => {
     //     valuesdefined = false;
     // }
 
-    if (!values || values.length === 0)  {
+    if (!values || values.length === 0) {
         // we dont have the values now lets check the raneg for this 
         values = []
         // console.log("The values are not provded lets check the range:");
 
-        if (!range||range.length === 0 ) {
+        if (!range || range.length === 0) {
             // so now we need to swtich to the default root
             values = datainputconfigs[type];
             // console.log("The values are generated from the default values:", values);
@@ -148,7 +156,7 @@ const validatetherange = (objs) => {
             let ref = { values: range }; // so that we can then transfer that to the values
             // decomposerange(ref, type);
             // values = ref.values;
-            
+
             if (type !== "string") {
                 values = decomposerange(ref, type);
             }
