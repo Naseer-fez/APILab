@@ -8,20 +8,20 @@ const LINK = ROOT + API + ENDPOINT
 const data = {
     "name": {
         "type": "string",
-        "values": [],
+        "values": ['abc', 'def', 'ghi'],
         // "range": []
 
     },
     "age": {
         "type": "int",
         "values": [],
-        // "range": [0, 100]
+        "range": [0, 100]
 
     },
     "salary": {
         "type": "float",
         "values": [],
-        // "range": [0.0, 100.0]
+        "range": [0.0, 100.0]
 
     }
 }
@@ -47,9 +47,9 @@ while (i<10)
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                link: ROOT + 'health',
+                link: ROOT + 'tests/apitest',
                 // endpoint: '/api/health',
-                method: 'GET',
+                method: 'POST',
                 data: data
             })
         })

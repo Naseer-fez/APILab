@@ -13,6 +13,9 @@ app.get('/health', (req, res) => {
 import apitestsRoutes from './routes/apitests.js';
 app.use('/api', apitestsRoutes);
 
+//importing the test routes
+import testRoutes from '../tests/sampleendpoint.js';
+app.use('/tests', testRoutes);
 
 
 

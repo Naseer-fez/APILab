@@ -42,7 +42,7 @@ const parsebody = (body) => {
     output[1][gibberish + "server" + gibberish] = {
         "link": link,
         "method": method,
-        "requests": body.requests ?? 1
+        "requests": body.requests ?? 100
     }
 
     // output[1][gibberish + "link" + gibberish] = link;
@@ -110,80 +110,92 @@ const parseinputdata = (data) => {
 
 }
 const validatetherange = (objs) => {
-
     var { type, values, range } = objs;
-    if (type === "" || type === null || type === undefined) {
+    if (type === "" || type === undefined || type === null) {
 
         return [0, "The type is not defined for the key" + key + "has no type:" + type, 401];
+
     }
     type = type.toLowerCase();
     const validtypes = Object.keys(datainputconfigs);
     if (!validtypes.includes(type)) {
-        return [0, "The type is not valid for the key:1212: " + key, 401];
+        return [0, "The type is not valid for the key" + key + "has no type:" + type, 401];
     }
-
-
-    if (values === "Null" || values === null) {
+    //Now lets verfiy the values and range
+    if (values.length === 0 || values === undefined || values === null) {
+        // we dont have the values now lets check the raneg for this 
         values = []
-        // meaning thier are no specific values to test the data on 
+        // console.log("The values are not provded lets check the range:");
+
+        if (range.length === 0 || range === undefined || range === null) {
+            // so now we need to swtich to the default root
+            values = datainputconfigs[type];
+            // This will bring the defult values to the raneg
+            range = [] //just to be sure 
+
+        } else {
+
+            // That measn we have a range
+            // console.log("Type is :", type);
+            let ref = { values: range }; // so that we can then transfer that to the values
+                decomposerange(ref,type);
+                values = ref.values;
+        }
     }
-    if (range === "Null" || range === null || range === undefined) {
-        range = [];
-        range = datainputconfigs[type]// Now the raneg is ocmpley mixed
+    else {
+        // we have the values so need to do anything just decompose them if needed
+        let ref = { values: values };
+        decomposerange(ref, type);
+        values = ref.values;
+         console.log("The values are generated from the values:", values);
 
-        // this could be [10,20] and [0,10]
-        //might be some error in the data for this reason we will just leave this 
-
-        // Returing this here now becuse we have to , but to reduce the simpley of checking
-
-    } else {
-        /* IF the user has provided a range then we need to fill in the details
-         Now the problem is , how do we validate the range so
-         [] so luck python numpy 
-    [start,end,jumps] maybe we testing a range for the data of even or odd
-    question is wht if the user want multiple data types to be jumped , so for thsi reason , shoudl we try to provide
-    mutilpe ranges .. This can be done but we need to perfrom them wisely  ause this is basic if else condition
-         */
-        let ref = { values: range }
-        values = decomposerange(ref);
-
-        console.log("The Range is provided by the users\n");
     }
+    return [1, { type: type, values: values, range: range }, 200];
 
-
-
-
-
-    return [1, { type, values, range }, 200]
 }
 
-const decomposerange = (ref) => {
-    const values = ref.values;
 
+
+
+
+
+
+const decomposerange = (ref, type) => {
+    const values = ref.values;
+    // console.log("Decomposing range for values:", values);
+    // console.log("Type of values:", typeof values);
     if (!Array.isArray(values)) {
         return;
     }
 
     // 1D
     if (!Array.isArray(values[0])) {
-        if (values.length === 2) {
-            const result = [];
+        var start = values[0];
+        var end = values[1];
+        var steps = values[2] ?? 1;
+        if (type === "string") {
+            start = start.charCodeAt(0)
+            end = end.charCodeAt(0)
+        }
+        const result = [];
 
-            for (let i = values[0]; i <= values[1]; i++) {
+        for (let i = start; i <= end; i += steps) {
+            if (type === "string") {
+                result.push(String.fromCharCode(i));
+            } else if (type === "int") {
+                result.push(i);
+            } else if (type === "float") {
+                result.push(Number(i.toFixed(10)));
+            } else {
                 result.push(i);
             }
 
-            ref.values = result;
-        }
-        else if (values.length === 3) {
-            const result = [];
 
-            for (let i = values[0]; i <= values[1]; i += values[2]) {
-                result.push(i);
-            }
 
-            ref.values = result;
+
         }
+
+
 
         return;
     }
@@ -194,7 +206,7 @@ const decomposerange = (ref) => {
     for (const range of values) {
         const child = { values: range };
 
-        decomposerange(child);
+        decomposerange(child, type);
 
         result.push(...child.values);
     }

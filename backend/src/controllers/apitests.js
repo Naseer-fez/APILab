@@ -7,22 +7,13 @@ const apitestsController = async (req, res) => {
     const data = parsebody(req.body);
     // console.log("Data is: ", data);
     // Time to validate this now 
-    if (data[0] === -1) {
+    if (data[0] === -1 || data[0] === 0) {
         return res.status(data[2]).json({
             message: data[1],
             data: data
         });
     }
-    else if (data[0] === 0) {
-        {
-            return res.status(data[2]).json({
-                message: data[1],
-                data: data
-            });
-        }
-
-    }
-
+    // console.log("Data is: ", data[1]);
     // console.log("Data is: ", data);
     const serverkey = gibberish + "server" + gibberish
     // this is complicated to look but easy to parse the data instead of a complex 2d object to a array
@@ -42,7 +33,9 @@ const apitestsController = async (req, res) => {
 const sendrequest = async (link, method, obj) => {
     // Now we will send the request to the link with the method and the data/
     // We will use the fetch API to send the request
-    console.log("Sending request to: ", link);
+    // console.log("Sending request to: ", link);
+    // console.log("Method is: ", method);
+    // console.log("Data is: ", obj);
     try {
         let result;
         if (method === 'GET') {
@@ -100,14 +93,17 @@ const apitests = async (link, method, data, requests) => {
     const promises = [];
     // console.log("Data is: ", data);
     let i = 0;
+
     while (i < requests) {
         {
             for (const combination of generatecombinations(data)) {
-
                 // console.log("Combination is: ", combination);
+                if (i >= requests) {
+                    break;
+                }
                 i++;
-
                 promises.push(sendrequest(link, method, combination));
+                // break;
 
             }
         }
@@ -132,40 +128,30 @@ const resultsparser = (results) => {
 
 // Good luck making this in cpp man in future  i just had to copy this full
 function* generatecombinations(data) {
-
     const keys = Object.keys(data);
+    
+    const maxLength = Math.max(
+        ...keys.map(key => data[key].values.length)
+    );
 
-    function* buildCombinations(index, current) {
+    for (let index = 0; index < maxLength; index++) {
+        const combination = {};
 
+        for (const key of keys) {
+            const values = data[key].values;
 
-        // All keys have been processed
-        if (index === keys.length) {
-
-            yield { ...current };
-
-            return;
+            if (values.length === 0) {
+                combination[key] = undefined;
+            } else if (index < values.length) {
+                combination[key] = values[index];
+            } else {
+                // Reuse the last available value
+                combination[key] = values[values.length - 1];
+            }
         }
 
-        const key = keys[index];
-
-        // Your generated test values are stored in range
-        const values = data[key].range;
-
-        for (const value of values) {
-
-            current[key] = value;
-
-
-
-            yield* buildCombinations(
-                index + 1,
-                current
-            );
-        }
+        yield combination;
     }
-
-    yield* buildCombinations(0, {});
 }
-
 
 export { apitestsController };
