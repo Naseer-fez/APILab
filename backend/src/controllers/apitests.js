@@ -97,7 +97,7 @@ const apitests = async (link, method, data, requests) => {
     while (i < requests) {
         {
             for (const combination of generatecombinations(data)) {
-                // console.log("Combination is: ", combination);
+                console.log("Combination is: ", combination);
                 if (i >= requests) {
                     break;
                 }
@@ -129,7 +129,7 @@ const resultsparser = (results) => {
 // Good luck making this in cpp man in future  i just had to copy this full
 function* generatecombinations(data) {
     const keys = Object.keys(data);
-    
+    // console.log(data)
     const maxLength = Math.max(
         ...keys.map(key => data[key].values.length)
     );

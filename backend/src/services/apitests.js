@@ -122,14 +122,22 @@ const validatetherange = (objs) => {
         return [0, "The type is not valid for the key" + key + "has no type:" + type, 401];
     }
     //Now lets verfiy the values and range
-    if (values.length === 0 || values === undefined || values === null) {
+    let valuesdefined = true;
+    // try{
+    //     values === undefined || values === null || values.length === 0 
+    // }catch(err){
+    //     valuesdefined = false;
+    // }
+
+    if (!values || values.length === 0)  {
         // we dont have the values now lets check the raneg for this 
         values = []
         // console.log("The values are not provded lets check the range:");
 
-        if (range.length === 0 || range === undefined || range === null) {
+        if (!range||range.length === 0 ) {
             // so now we need to swtich to the default root
             values = datainputconfigs[type];
+            // console.log("The values are generated from the default values:", values);
             // This will bring the defult values to the raneg
             range = [] //just to be sure 
 
@@ -138,16 +146,23 @@ const validatetherange = (objs) => {
             // That measn we have a range
             // console.log("Type is :", type);
             let ref = { values: range }; // so that we can then transfer that to the values
-                decomposerange(ref,type);
-                values = ref.values;
+            // decomposerange(ref, type);
+            // values = ref.values;
+            
+            if (type !== "string") {
+                values = decomposerange(ref, type);
+            }
         }
     }
     else {
         // we have the values so need to do anything just decompose them if needed
         let ref = { values: values };
-        decomposerange(ref, type);
-        values = ref.values;
-         console.log("The values are generated from the values:", values);
+        // decomposerange(ref, type);
+        // values = ref.values;
+        if (type !== "string") {
+            values = decomposerange(ref, type);
+        }
+        //  console.log("The values are generated from the values:", values);
 
     }
     return [1, { type: type, values: values, range: range }, 200];
@@ -161,6 +176,7 @@ const validatetherange = (objs) => {
 
 
 const decomposerange = (ref, type) => {
+    console.log("decomposing range for values:", ref.values);
     const values = ref.values;
     // console.log("Decomposing range for values:", values);
     // console.log("Type of values:", typeof values);
@@ -180,12 +196,15 @@ const decomposerange = (ref, type) => {
         const result = [];
 
         for (let i = start; i <= end; i += steps) {
+
             if (type === "string") {
                 result.push(String.fromCharCode(i));
             } else if (type === "int") {
                 result.push(i);
             } else if (type === "float") {
                 result.push(Number(i.toFixed(10)));
+                // break;
+                // console.log("Float value is: ", Number(i.toFixed(100)));
             } else {
                 result.push(i);
             }
@@ -197,7 +216,8 @@ const decomposerange = (ref, type) => {
 
 
 
-        return;
+
+        return result;
     }
 
     // 2D
