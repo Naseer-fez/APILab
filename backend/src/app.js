@@ -10,8 +10,13 @@ app.get('/health', (req, res) => {
 })
 
 // Importing the routes
+
+// Fuzzy matching routes for the API tests
 import apitestsRoutes from './routes/apitests.js';
 app.use('/api', apitestsRoutes);
+// concurrence test route
+import concurrencetestRoutes from './routes/concurrencetest.js';
+app.use('/api', concurrencetestRoutes);
 
 //importing the test routes
 import testRoutes from '../tests/sampleendpoint.js';
