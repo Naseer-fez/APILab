@@ -130,16 +130,77 @@ const validatetherange = (objs) => {
     if (range === "Null" || range === null || range === undefined) {
         range = [];
         range = datainputconfigs[type]// Now the raneg is ocmpley mixed
-        
+
         // this could be [10,20] and [0,10]
         //might be some error in the data for this reason we will just leave this 
-    }
-    
-    return [1, { type, values, range }, 200]
 
+        // Returing this here now becuse we have to , but to reduce the simpley of checking
+
+    } else {
+        /* IF the user has provided a range then we need to fill in the details
+         Now the problem is , how do we validate the range so
+         [] so luck python numpy 
+    [start,end,jumps] maybe we testing a range for the data of even or odd
+    question is wht if the user want multiple data types to be jumped , so for thsi reason , shoudl we try to provide
+    mutilpe ranges .. This can be done but we need to perfrom them wisely  ause this is basic if else condition
+         */
+        let ref = { values: range }
+        values = decomposerange(ref);
+
+        console.log("The Range is provided by the users\n");
+    }
+
+
+
+
+
+    return [1, { type, values, range }, 200]
 }
 
+const decomposerange = (ref) => {
+    const values = ref.values;
 
+    if (!Array.isArray(values)) {
+        return;
+    }
+
+    // 1D
+    if (!Array.isArray(values[0])) {
+        if (values.length === 2) {
+            const result = [];
+
+            for (let i = values[0]; i <= values[1]; i++) {
+                result.push(i);
+            }
+
+            ref.values = result;
+        }
+        else if (values.length === 3) {
+            const result = [];
+
+            for (let i = values[0]; i <= values[1]; i += values[2]) {
+                result.push(i);
+            }
+
+            ref.values = result;
+        }
+
+        return;
+    }
+
+    // 2D
+    const result = [];
+
+    for (const range of values) {
+        const child = { values: range };
+
+        decomposerange(child);
+
+        result.push(...child.values);
+    }
+
+    ref.values = result;
+};
 
 
 export { parsebody, gibberish };
