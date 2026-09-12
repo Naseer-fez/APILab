@@ -7,21 +7,21 @@ const ENDPOINT = "apitests"
 const LINK = ROOT + API + ENDPOINT
 const data = {
     "name": {
-        "type": "string",
-        "values": ['abc', 'def', 'ghi'],
-        // "range": []
+        "type": "string"
+        ,"values": ['abc', 'def', 'ghi']
+        // ,"range": ['aba', 'zzy', 1]
 
     },
     "age": {
-        "type": "int",
-        "values": [],
-        "range": [0, 100]
+        "type": "int"
+        // ,"values": [0, 1, 2, 3, 4, 5]
+        // ,"range": [0, 100]
 
     },
     "salary": {
-        "type": "float",
-        "values": [],
-        "range": [0.0, 100.0]
+        "type": "float"
+        // ,"values": [1.0, 2.0, 3.0, 4.0, 5.0]
+        // ,"range": [0.0, 100.0,0.1]
 
     }
 }
