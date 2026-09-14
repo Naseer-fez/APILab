@@ -4,9 +4,9 @@ dotenv.config({ quiet: true });
 const app = express();
 
 app.use(express.json()); //using the json parser
-app.get('/health', (req, res) => {
-    // console.log("Health check route is working");
-    res.status(200).json({ "Status": "Hello,World" });
+app.post('/health', (req, res) => {
+    console.log("Health check route is working");
+    res.status(200).json({ "body": "Hello,World" });
 })
 
 // Importing the routes
