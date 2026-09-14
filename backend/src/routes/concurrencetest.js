@@ -6,7 +6,7 @@ const concurrencetestRoutes = express.Router();
 
 
 
-concurrencetestRoutes.get('/concurrencetest',concurrencetestcontroller);
+concurrencetestRoutes.post('/concurrencetest',concurrencetestcontroller);
 
 /*
 
@@ -16,10 +16,11 @@ The options the user will send will be
 "link": "http://localhost:3000/apitest",
 "method": "POST",
 "headers": {}, //the basic information 
-"data": {}  and only one valid data 
+"bodytosend": {}  and only one valid data 
 The goal is not to check will this will accept or not 
 the goal is to see how much load the api can actuly handel
 so after the basic info data: the main data is 
+data
 {
 "requests": 10000 this will be the number of total requests
 "concurency": 100 this will be the number of requests at a instance of time
