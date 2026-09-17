@@ -2,10 +2,10 @@ import { requestengine } from '../src/services/concurencyengine.js';
 
 const defaultvalues = {
     "requests": 10000,
-    "concurency": 1000,
+    "concurency": 100,
     "increment": 10,
-    "interval": 1000,
-    "timout": 50000
+    "interval": 100,
+    "timeout": 500000
 
 
 }
