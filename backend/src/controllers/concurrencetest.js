@@ -2,7 +2,7 @@ import { parsebody } from '../services/concurencytest.js';
 import {requestengine} from '../services/concurencyengine.js';
 
 const concurrencetestcontroller = async (req, res) => {
-    const bodydata = parsebody(req.body); // we have pased the body data and now we can use it to send the request to the endpoint
+    const bodydata = parsebody(req.body,req.file); // we have pased the body data and now we can use it to send the request to the endpoint
 
     // console.log("The body data is ", bodydata);
     if (bodydata[0] === 0) {

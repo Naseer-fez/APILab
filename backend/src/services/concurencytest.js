@@ -1,15 +1,18 @@
+import { handelfiles } from './filehandler.js';
+
 
 const defaultvalues = {
     "requests": 10000,
     "concurency": 100,
     "increment": 10,
     "interval": 1000,
-    "timout": 50000
+    "timout": 50000,
+    "isfile": 0
 
 
 }
 
-const parsebody = (body) => {
+const parsebody = (body, file = null) => {
     if (!body || typeof body !== "object" || Array.isArray(body)) {
         return [0, "Invalid body format. Check the request body properly.", 400];
     }
@@ -18,18 +21,12 @@ const parsebody = (body) => {
     var { link, endpoint, endpointavailable, method, headers, data, bodytosend } = body;
     link = extractlink({ link, endpoint, endpointavailable });
     if (link[0] === 0) {
-        return { message: link[1], status: link[2] };
+        return [0, link[1], link[2]];
     }
     method = methodcheck({ method });
     if (method[0] === 0) {
-        return { message: method[1], status: method[2] };
+        return [0, method[1], method[2]];
     }
-    data = parsedata({ data });
-    if (data[0] === 0) {
-        return { message: data[1], status: data[2] };
-    }
-    //now we can either  do data=data[1] or send the final data
-
     if (!headers || Object.keys(headers).length === 0) {
         // default headers will be used
         headers = {
@@ -37,10 +34,22 @@ const parsebody = (body) => {
         };
         // console.log("No headers provided, using default headers:", headers);
     }
+    // if (body.data.isfile !== 0 || !(data instanceof File)) {
+    //     //cant punish the user for send is file worng but we can check if the data is a file or not
+    //     return [0, "Invalid data type. Expected a File object for 'data' when 'isfile' is not 0.", 400];
+    // }
+
+    data = parsedata({ data });
+    if (data[0] === 0) {
+        return [0, data[1], data[2]];
+    }
+
+    //now we can either  do data=data[1] or send the final data
+
+
     if (!bodytosend || Object.keys(bodytosend).length === 0) {
         bodytosend = {};
     }
-
     const finaldata = {
         link: link[1],
         method: method[1],
@@ -48,6 +57,16 @@ const parsebody = (body) => {
         data: data[1],
         bodytosend: bodytosend
     }
+    if (file) {
+        return handelfiles({ finaldata, file });
+    }
+
+    if (finaldata.data.isfile > 0) {
+        // no need to check file casue we haev alrady retuned it
+        return [0, "No File is provided by the user.", 400];
+    }
+
+
     // console.log("The final data is ", finaldata);
     return [1, finaldata, 200];
 
@@ -79,7 +98,7 @@ const extractlink = ({ link, endpoint, endpointavailable }) => {
 
 const parsedata = ({ data }) => {
     if (data == null) {
-        data = defaultvalues;
+        data = {... defaultvalues};
         return [1, data, 200];
     }
     // Make sure data exists and is an object

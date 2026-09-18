@@ -6,7 +6,9 @@ const concurrencetestRoutes = express.Router();
 
 
 
-concurrencetestRoutes.post('/concurrencetest',concurrencetestcontroller);
+concurrencetestRoutes.post('/concurrencetest', concurrencetestcontroller);
+
+concurrencetestRoutes.post('/concurrencetest/file',upload.single('file'), concurrencetestcontroller);
 
 /*
 
@@ -22,6 +24,7 @@ the goal is to see how much load the api can actuly handel
 so after the basic info data: the main data is 
 data
 {
+"isfile": int if 0 then no file , defualt is zero 
 "requests": 10000 this will be the number of total requests
 "concurency": 100 this will be the number of requests at a instance of time
 "increment": 10  this will the number of reqs that will increased by time
