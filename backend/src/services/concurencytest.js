@@ -11,7 +11,8 @@ const defaultvalues = {
     "interval": 1000,
     "timout": 50000,
     "filepath": "",
-    "isfile": 0
+    "isfile": 0,
+    "filekey": "file"
 
 
 }
@@ -149,7 +150,17 @@ const parsedata = ({ data }) => {
         }
 
         const value = data[key];
-        if (key === "filepath" && typeof value !== "number") {
+        if ((key === "filepath") || (key === "filekey")) {
+
+            if (typeof value === "number") {
+                return [
+                    0,
+                    `Invalid value for ${key}. Expected a string.`,
+                    400
+                ];
+
+            }
+
             continue;
         }
 

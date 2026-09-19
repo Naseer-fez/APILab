@@ -152,8 +152,9 @@ class concurrencyengine {
         //conver the buffer into a blob now
         const blob = new Blob(
             [filebuffer], { type: this.file.mimetype });
+            const filekey = this.data?.filekey || "file";
         form.append(
-            "file", blob, this.file.originalname
+            filekey, blob, this.file.originalname
         )
         options.body = form;
         delete options.headers['Content-Type'];  // let node do it automatically
