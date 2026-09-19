@@ -32,8 +32,11 @@ data
 "interval":  1000  <ms>this will be the amount of time the wait server will wait till it restarts
 "timout": 50000 <ms> The amount of time the sever will wait for responce casue we never know the sevre might have crashed
 "requests": this takes the number of reqesut to be sent to the sever in total default value is 100 
-"isfile": int if 0 then no file , defualt is zero  
+"isfile": int if 0 then no file , defualt is zero  If the file is uploaded then the server will chaneg it later
+// if it is true then server will look file the file and rasie a error if the file is not found
 "filepath": "path/to/file", this will be the path to the file that will be sent to the server <string>
+"filetype": "type of the file" is the key that will be used to send the file to the server <string> default it is file
+
  // You can also upload a file through the gui component and
  it will automatically will be configured to the apporiprate endpoint 
  and will follow the same rules as the body data
