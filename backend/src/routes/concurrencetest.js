@@ -1,6 +1,6 @@
 import express from 'express';
 import { concurrencetestcontroller } from '../controllers/concurrencetest.js';
-
+import { upload } from '../middelware/uploadfile.js';
 
 const concurrencetestRoutes = express.Router();
 
@@ -8,7 +8,7 @@ const concurrencetestRoutes = express.Router();
 
 concurrencetestRoutes.post('/concurrencetest', concurrencetestcontroller);
 
-concurrencetestRoutes.post('/concurrencetest/file',upload.single('file'), concurrencetestcontroller);
+concurrencetestRoutes.post('/concurrencetest/file',upload.single('file'), concurrencetestcontroller,()=>{console.log("The file has been uploaded")});
 
 /*
 

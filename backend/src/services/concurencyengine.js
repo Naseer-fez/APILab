@@ -1,6 +1,8 @@
+import fs from 'fs/promises';
+
 class concurrencyengine {
 
-    constructor({ link, method, headers, bodytosend, isget, data }) {
+    constructor({ link, method, headers, bodytosend, isget, data, file = null, isfile = 0 }) {
 
         this.link = link;
         this.method = method;
@@ -8,7 +10,8 @@ class concurrencyengine {
         this.bodytosend = bodytosend;
         this.isget = isget;
         this.data = data;
-
+        this.file = file;
+        this.isfile = isfile;
         // this.beginsimulation();
     }
     // current we arent doing much with the succes data cause we are testing the 
@@ -96,20 +99,15 @@ class concurrencyengine {
             controller.abort();
         }, timeoutMs);
         try {
-            const options = {
+            var options = {
                 method: method,
                 headers: headers,
                 signal: controller.signal
             }
-            if (method !== "GET") {
-                if (bodytosend instanceof FormData) {
-                    options.body = bodytosend;
-                    delete options.headers['Content-Type'];  // let node do it automatically
-
-                }
-                else {
-                    options.body = JSON.stringify(bodytosend)
-                }
+            if (this.isfile || this.file) {
+                options = await this.filerequest(options);
+            } else {
+                options = this.normlarequest(options);
             }
             response = await fetch(link, options);
             // clearTimeout(timeoutId);
@@ -125,7 +123,8 @@ class concurrencyengine {
             clearTimeout(timeoutId);
             // const data = await response.json();
             // console.log("The data is ", data);
-            return [response.ok ? 1 : 0,
+            // console.log("The response is ", response);
+            return [response.ok ,
                 data, response.status];
 
         } catch (error) {
@@ -141,6 +140,40 @@ class concurrencyengine {
 
         }
     }
+    async filerequest(options) {
+        // file check is done now lets handel thsi 
+        const form = new FormData();
+        for (const [key, value] of Object.entries(this.bodytosend)) {
+            form.append(key, value);
+
+        }
+        const filebuffer = await fs.readFile(this.file.path);
+
+        //conver the buffer into a blob now
+        const blob = new Blob(
+            [filebuffer], { type: this.file.mimetype });
+        form.append(
+            "file", blob, this.file.originalname
+        )
+        options.body = form;
+        delete options.headers['Content-Type'];  // let node do it automatically
+        return options;
+    }
+    normlarequest(options) {
+
+        if (options.method !== "GET") {
+            if (this.bodytosend instanceof FormData) {
+                options.body = this.bodytosend;
+                delete options.headers['Content-Type'];  // let node do it automatically
+
+            }
+            else {
+                options.body = JSON.stringify(this.bodytosend)
+            }
+        }
+        return options;
+    }
+
     async sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
@@ -150,10 +183,11 @@ class concurrencyengine {
 }
 
 
-const requestengine = async ({ link, method, headers, bodytosend, isget, data }) => {
+const requestengine = async ({ link, method, headers, bodytosend, isget, data,file, isfile }) => {
     // console.log("The data is ", data);
 
-    const engine = new concurrencyengine({ link, method, headers, bodytosend, isget, data });
+    const engine = new concurrencyengine({ link, method, headers,
+         bodytosend, isget, data,file, isfile });
     // console.log("The engine is ", engine);
     const result = await engine.beginsimulation();
     console.log("The result is ", result);

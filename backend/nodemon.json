@@ -1,8 +1,8 @@
 {
   "ignore": [
     "logs/*",
-    "*.txt"
-   
+    "*.txt",
+    "uploads/*"
   ]
 }
 

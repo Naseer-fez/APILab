@@ -2,14 +2,18 @@ import { parsebody } from '../services/concurencytest.js';
 import {requestengine} from '../services/concurencyengine.js';
 
 const concurrencetestcontroller = async (req, res) => {
-    const bodydata = parsebody(req.body,req.file); // we have pased the body data and now we can use it to send the request to the endpoint
+    
+
+    const bodydata = await parsebody(req.body,req.file); // we have pased the body data and now we can use it to send the request to the endpoint
 
     // console.log("The body data is ", bodydata);
     if (bodydata[0] === 0) {
+
         return res.status(bodydata[2]).json({ message: bodydata[1] });
     }
     // console.log("The body data is ", bodydata[1]);
     // we have pased the body data and now we can use it to send the request to the endpoint
+    // console.log("The body data is ", bodydata[1]);
     const enginedata = await concurrencerequest(bodydata[1]);
     if (enginedata[0] === 0) {
         return res.status(enginedata[2]).json({ message: enginedata[1] });
@@ -18,7 +22,7 @@ const concurrencetestcontroller = async (req, res) => {
     res.status(200).json({ message: "concurrency test controller", data: enginedata[1] });
 }
 
-const concurrencerequest = async ({ link, method, headers, data, bodytosend }) => {
+const concurrencerequest = async ({ link, method, headers, data, bodytosend,file,isfile }) => {
     // now the first thing is we need one function to send one requests 
     var isget = false;
     if (method == "GET") {
@@ -33,9 +37,12 @@ const concurrencerequest = async ({ link, method, headers, data, bodytosend }) =
         method: method,
         headers: headers,
         bodytosend: bodytosend,
-        isget: isget
+        isget: isget,
+        file: file,
+        isfile: isfile
     }// so that we can send the data to the sendrequest function and get the response from it
-    const reqdata = await requestengine({ link, method, headers, bodytosend, isget,data });
+    const reqdata = await requestengine({ link, method, headers,
+         bodytosend, isget,data, file, isfile });
     return reqdata;
     //mostly will send a list ig
 

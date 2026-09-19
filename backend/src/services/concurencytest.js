@@ -1,4 +1,7 @@
-import { handelfiles } from './filehandler.js';
+import fs from "fs";
+import path from "path";
+import mime from "mime-types";
+
 
 
 const defaultvalues = {
@@ -7,12 +10,15 @@ const defaultvalues = {
     "increment": 10,
     "interval": 1000,
     "timout": 50000,
+    "filepath": "",
     "isfile": 0
 
 
 }
 
-const parsebody = (body, file = null) => {
+
+
+const parsebody = async (body, file = null) => {
     if (!body || typeof body !== "object" || Array.isArray(body)) {
         return [0, "Invalid body format. Check the request body properly.", 400];
     }
@@ -58,12 +64,24 @@ const parsebody = (body, file = null) => {
         bodytosend: bodytosend
     }
     if (file) {
-        return handelfiles({ finaldata, file });
+        // return handelfiles({ finaldata, file });
+        finaldata.data.isfile = 1;
+        finaldata.file = file;
     }
-
-    if (finaldata.data.isfile > 0) {
+    else if (finaldata.data.isfile > 0) {
         // no need to check file casue we haev alrady retuned it
-        return [0, "No File is provided by the user.", 400];
+        if (data[1].filepath && data[1].filepath !== "") {
+            finaldata.file = await savethefile({ filepath: data[1].filepath });
+            //Now that we got the file we need to saev that file 
+            if (finaldata.file[0] === 0) {
+                return [0, finaldata.file[1], finaldata.file[2]];
+            }
+            finaldata.data.isfile = 1;
+            finaldata.file = finaldata.file[1];
+        } else {
+            return [0, "Filepath is required when 'isfile'  is enabled ", 400];
+
+        }
     }
 
 
@@ -98,7 +116,7 @@ const extractlink = ({ link, endpoint, endpointavailable }) => {
 
 const parsedata = ({ data }) => {
     if (data == null) {
-        data = {... defaultvalues};
+        data = { ...defaultvalues };
         return [1, data, 200];
     }
     // Make sure data exists and is an object
@@ -131,20 +149,12 @@ const parsedata = ({ data }) => {
         }
 
         const value = data[key];
-
-
-        if (typeof value !== "number" || Number.isNaN(value)) {
-            return [
-                0,
-                `Invalid value for ${key}.
-The value should be a positive number only.
-The default value is: ${defaultvalues[key]}.`,
-                400
-            ];
+        if (key === "filepath" && typeof value !== "number") {
+            continue;
         }
 
+        if (typeof value !== "number" || Number.isNaN(value) || value < 0) {
 
-        if (value < 0) {
             return [
                 0,
                 `Invalid value for ${key}.
@@ -154,6 +164,8 @@ The default value is: ${defaultvalues[key]}.`,
             ];
         }
     }
+
+
 
     return [1, data, 200];
 };
@@ -173,7 +185,34 @@ If not the default method will be used which is POST
 }
 
 
+const savethefile = async ({ filepath }) => {
+    console.log("The filepath is ", filepath);
+    if (typeof filepath !== "string" || filepath.trim() === "") {
+        return [0, "Invalid filepath provided.", 400];
+    }
+    //trying to get the file now
+    try {
+        await fs.promises.access(filepath,);
+    } catch (err) {
+        return [0, `File not found at path: ${filepath}`, 404];
+    }
+    const stats = await fs.promises.stat(filepath);
+    if (!stats.isFile()) {
+        return [0, `The path provided is not a file: ${filepath}`, 400];
 
+    }
+    const originalname = path.basename(filepath);
+    const mimetype = mime.lookup(filepath) || "application/octet-stream";
+
+    return [1, {
+        path: filepath,
+        originalname: originalname,
+        mimetype: mimetype
+
+    }]
+
+
+};
 
 
 
