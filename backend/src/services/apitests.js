@@ -1,6 +1,19 @@
-import { datainputconfigs } from '../config/datainputconfigs.js';
+import { datainputconfigs, fileinputconfigs } from '../config/datainputconfigs.js';
+import fs from "fs";
 const gibberish = '/*/'
-const parsebody = (body) => {
+
+const filerange = (() => {
+    const range = [];
+    const step = 512; // 512 bytes
+    const totlaSize = 5 * 1024 * 1024; // 5 MB
+    for (let i = 0; i <= totlaSize; i += step) {
+        range.push(i);
+    }
+
+    return range;
+})(); //This will genrate a default range for us
+
+const parsebody = (body, file) => {
 
     // console.log("Body is: ", body);
     var link = body.link ?? gibberish; // This symbol make sure we can check the link safely
@@ -26,12 +39,23 @@ const parsebody = (body) => {
             "Accept": "application/json"
         };//Now we need to give the default headers so that we can send the request to the server
     }
+
     // NOw lets get the data poitn and the methods
     const method = body.method.toUpperCase() ?? 'GET';
     const validmethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
     if (!validmethods.includes(method)) {
         return [0, "Invalid method", 400];
     }
+    //Now lets check the availblity of files
+    if (file && file !== undefined && file !== null) {
+        body.fileavailable = true;
+    }
+    if (body.fileavailable && (file === undefined || file === null)) {
+        //why this check to know if the endpoint is for file or not
+        return [0, `File is not provided but fileavailable is true
+            Add a valid file to the request or set fileavailable to false`, 400];
+    }
+
     // Now how will we recive the data, so the plan is we will be uing json for the data and depeonds on the method we will use parms or json  body
     var data = body.data ?? gibberish; // This symbol make sure we can check the link safely
     if ((data === gibberish) || (data === '')) {
@@ -39,8 +63,15 @@ const parsebody = (body) => {
         return healthtest(link, method);
 
     }
+
     //Now that we got the data exists now lets parse thsi data also 
-    var output = parseinputdata(data);
+    var output = [];
+    if (!body.fileavailable) {
+        output = parseinputdata(data);
+    }
+    else {
+        output = filehandler(data, file);
+    }
     if (output[0] === 0) {
         return output;
         //This will save the extra computation to send the link also 
@@ -50,8 +81,11 @@ const parsebody = (body) => {
         "link": link,
         "method": method,
         "headers": headers,
-        "requests": body.requests ?? 100
+        "requests": body.requests ?? 100,
+        "fileavailable": body.fileavailable ?? false //just to make sure we can check the file availability in the next step
     }
+
+
 
     // output[1][gibberish + "link" + gibberish] = link;
     // output[1][gibberish + "method" + gibberish] = method;
@@ -92,6 +126,7 @@ const healthtest = (link, method) => {
 const parseinputdata = (data) => {
     //Now This will genrate the refrence datas this will be the main thing for the auatomation 
     //we might get a array of dict 
+
     const keys = [];
     const values = [];
 
@@ -177,12 +212,6 @@ const validatetherange = (objs) => {
 
 }
 
-
-
-
-
-
-
 const decomposerange = (ref, type) => {
     console.log("decomposing range for values:", ref.values);
     const values = ref.values;
@@ -241,6 +270,84 @@ const decomposerange = (ref, type) => {
 
     ref.values = result;
 };
+
+
+//need to handel this files now
+const filehandler = (data, file) => {
+
+    const keys = [];
+    const values = [];
+    for (const [key, value] of Object.entries(data)) {
+        keys.push(key);
+        values.push(value.values);
+    }
+    var finaldata = {};
+    for (let i = 0; i < keys.length; i++) {
+        let getfiles = [];
+        if (data[keys[i]].type === "others") {
+            // Handle the "others" type
+            getfiles = checkfilepaths(data[keys[i]].values);
+        } else {
+            getfiles = filetypeverifier(data[keys[i]]);
+        }
+        if (getfiles[0] === 0) {
+            return getfiles;
+        }
+        finaldata[keys[i]] = getfiles[1];
+
+    }
+    return [1, finaldata, 200];
+}
+
+const filetypeverifier = (objs) => {
+
+    let { type, values, range } = objs;
+    if (type === "" || type === undefined || type === null) {
+        return [0, "The type is not defined for the key" + key + "has no type:" + type +
+            "\n Valid file types are : " + Object.keys(fileinputconfigs).join(", "), 401];
+
+    }
+
+    if (values === undefined || values === null || values.length === 0) {
+        values = fileinputconfigs[type];
+        //Now we need to do this fro ranges also 
+        range = filerange;
+    } else {
+        //Now we have the values for say the correct extenstion given by the user now lets decompose the range
+        range = decomposerange({ values: range }, "int"); //This will decompose the range for use
+        //type mostly will be string so for that reason  int is sent 
+
+
+    }
+    return [1, { type: type, values: values, range: range }, 200];
+
+
+
+}
+const checkfilepaths = (totalpaths) => {
+    // now need to check all the paths and see if they are valid or not
+    let validpaths = [];
+    for (const path of totalpaths) {
+        if (path === undefined || path === null || path === "") continue;
+        try {
+            if (fs.existsSync(path)) {
+                validpaths.push(path);
+            } else {
+                console.warn(`File path does not exist: ${path}`);
+            }
+
+        } catch (err) {
+            console.error(`Error checking file path: ${path}`, err);
+        }
+    }
+
+    if (validpaths.length === 0) {
+        return [0, "No valid file paths provided", 400];
+    }
+    return [1, validpaths, 200];
+
+
+}
 
 
 export { parsebody, gibberish };

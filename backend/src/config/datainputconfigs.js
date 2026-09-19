@@ -53,4 +53,49 @@ const datainputconfigs = {
     ]
 }
 
-export { datainputconfigs };
+
+const fileinputconfigs = {
+    image: [
+        ".jpg", ".jpeg", ".png", ".gif", ".webp",
+        ".bmp", ".tiff", ".svg", ".ico", ".avif"
+    ],
+
+    text: [
+        ".txt", ".html", ".css", ".js", ".json",
+        ".xml", ".csv", ".md", ".yaml", ".yml"
+    ],
+
+    pdf: [
+        ".pdf"
+    ],
+
+    document: [
+        ".doc", ".docx", ".odt", ".rtf"
+    ],
+
+    spreadsheet: [
+        ".xls", ".xlsx", ".ods"
+    ],
+
+    presentation: [
+        ".ppt", ".pptx", ".odp"
+    ],
+
+    archive: [
+        ".zip", ".rar", ".7z", ".tar", ".gz"
+    ],
+
+    audio: [
+        ".mp3", ".wav", ".ogg", ".flac", ".aac", ".m4a"
+    ],
+
+    video: [
+        ".mp4", ".webm", ".mkv", ".avi", ".mov", ".wmv"
+    ],
+
+    code: [
+        ".c", ".cpp", ".h", ".java", ".py",
+        ".go", ".rs", ".php", ".cs", ".sql", ".sh"
+    ]
+};
+export { datainputconfigs, fileinputconfigs };
