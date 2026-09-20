@@ -61,6 +61,14 @@ by default range starts from 0 to 5mb
 Now casue this are fuzzy tests 
 the values can contains the file paths also 
 for say want to test on specific files then it cna be used
+if the type is "others" 
+Then the values you can add the file paths 
+The range will be ignored in this case if the range is empty 
+but if the range is provided then a first the file will be sent and then 
+random bytes will be sent to the server to see how it will handele the data The random bytes will one mb of extra data
+You can add any number of files in the values array 
+
+//If paths dont exist then the files which are found will be sent 
 
 
 }

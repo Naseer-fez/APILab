@@ -8,7 +8,7 @@ const concurrencetestRoutes = express.Router();
 
 concurrencetestRoutes.post('/concurrencetest', concurrencetestcontroller);
 
-concurrencetestRoutes.post('/concurrencetest/file',upload.single('file'), concurrencetestcontroller);
+concurrencetestRoutes.post('/concurrencetest/file',upload.array('file'), concurrencetestcontroller);
 
 /*
 

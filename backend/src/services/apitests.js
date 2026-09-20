@@ -274,7 +274,7 @@ const decomposerange = (ref, type) => {
 
 //need to handel this files now
 const filehandler = (data, file) => {
-
+    // /return [1, { type: type, values: values, range: range }, 200];
     const keys = [];
     const values = [];
     for (const [key, value] of Object.entries(data)) {
@@ -286,7 +286,7 @@ const filehandler = (data, file) => {
         let getfiles = [];
         if (data[keys[i]].type === "others") {
             // Handle the "others" type
-            getfiles = checkfilepaths(data[keys[i]].values);
+            getfiles = checkfilepaths(data[keys[i]]);
         } else {
             getfiles = filetypeverifier(data[keys[i]]);
         }
@@ -324,17 +324,17 @@ const filetypeverifier = (objs) => {
 
 
 }
-const checkfilepaths = (totalpaths) => {
+const checkfilepaths = (data) => {
     // now need to check all the paths and see if they are valid or not
+    let { type, totalpaths, range } = data;
     let validpaths = [];
+    let filesize = [];
     for (const path of totalpaths) {
         if (path === undefined || path === null || path === "") continue;
         try {
-            if (fs.existsSync(path)) {
-                validpaths.push(path);
-            } else {
-                console.warn(`File path does not exist: ${path}`);
-            }
+            const stats = fs.statSync(path);
+            validpaths.push(path);
+            filesize.push(stats.size);
 
         } catch (err) {
             console.error(`Error checking file path: ${path}`, err);
@@ -344,7 +344,26 @@ const checkfilepaths = (totalpaths) => {
     if (validpaths.length === 0) {
         return [0, "No valid file paths provided", 400];
     }
-    return [1, validpaths, 200];
+    // return [1, { type: type, values: values, range: range }, 200];
+    if (range !== undefined || range !== null || range.length !== 0) {
+        // means the user want us to send the random bytes to the server
+        //The ideas is , the start is simple , [0,liimit,step] , zero is the file size , and the limit is how much we want to send
+        //Now , we will create the ranges for each file now.
+        // that measn 
+        //this needs to be decided
+        // for (let i = 0; i < validpaths.length; i++) {
+        //     range.push(filesize[i]);
+        // }
+
+    }else{
+        range=[];//That measn the user only want us to send this file only and not send any random bytes to the server
+    }
+
+
+
+
+
+    return [1, { type: type, values: totalpaths, range: range }, 200];
 
 
 }

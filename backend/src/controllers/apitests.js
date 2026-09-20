@@ -1,10 +1,10 @@
 
 import { parsebody, gibberish } from '../services/apitests.js';
+import fs from 'fs';
 //gibberish is the speical symbol to diffrenct the user and server data
 
 const apitestsController = async (req, res) => {
-    console.log("API TESTS CONTROLLER");
-    const data = parsebody(req.body);
+    const data = parsebody(req.body, req.file); // we have pased the body data and now we can use it to send the request to the endpoint
     // console.log("Data is: ", data);
     // Time to validate this now 
     if (data[0] === -1 || data[0] === 0) {
@@ -23,22 +23,33 @@ const apitestsController = async (req, res) => {
     const server = data[1][serverkey];
     // console.log("Server is: ", server);
     delete data[1][serverkey]
-    const outputrate = await apitests(
+    var sendingfunction;
+    if (server.fileavailable) { //that is why we have chnaged it in the parser
+        sendingfunction = filetests;
+    } else {
+        sendingfunction = apitests;
+    }
+    var outputrate = await sendingfunction(
         {
             link: server.link,
             method: server.method,
             data: data[1],
             headers: server.headers,
-            requests: server.requests
+            requests: server.requests,
+            file: req.file
         }
     );
+    if (outputrate[0] === 1) {
+        outputrate = resultsparser(outputrate[1]);
+    }
+
     return res.status(data[2]).json({
-        message: data[1],
-        data: outputrate
-    });
+        message: data[1], //this the sent data
+        data: outputrate //this is the result
+    }); //chcek this is wrong righ
 }
 
-const sendrequest = async (link, method, headers, obj) => {
+const sendrequest = async (link, method, headers, obj = {}, file = null, fieldname = "file") => {
     // Now we will send the request to the link with the method and the data/
     // We will use the fetch API to send the request
     // console.log("Sending request to: ", link);
@@ -46,7 +57,26 @@ const sendrequest = async (link, method, headers, obj) => {
     // console.log("Data is: ", obj);
     try {
         let result;
-        if (method === 'GET') {
+        if (file) {
+            const form = new FormData();
+            for (const [key, value] of Object.entries(obj ?? {})) {
+                form.append(key, String(value));
+            }
+            const filebuffer = await fs.promises.readFile(file.path);
+            const blob = new Blob([filebuffer], { type: file.mimetype });
+            //Need to get this filed name
+            form.append(fieldname, blob, file.originalname);
+            result = await fetch(link, {
+                method: method.toUpperCase(),
+                headers: headers,
+                body: form
+            });
+
+
+        }
+
+
+        else if (method === 'GET') {
             // For GET requests, we will append the data as query parameters
             const url = new URL(link);
             Object.entries(obj).forEach(([key, value]) => {
@@ -96,7 +126,16 @@ const sendrequest = async (link, method, headers, obj) => {
 //for now it will be sending requests through node 
 
 //Need to work on this combination and how the requests are suppoed to go 
-const apitests = async ({ link, method, data, headers, requests }) => {
+const apitests = async ({ link, method, data, headers, requests, file }) => {
+    //file is none for the casue this is for data only and not for the file tests
+    if (file !== undefined && file !== null) {
+        //maybe a mistake
+        return filetests({ link, method, data, headers, requests, file });
+        //this is for the file tests and not for the data tests 
+        //just to make sure one last time that it is for file only 
+        //mostly this is not needed 
+
+    }
 
     const promises = [];
     // console.log("Data is: ", data);
@@ -120,7 +159,7 @@ const apitests = async ({ link, method, data, headers, requests }) => {
 
     const results = await Promise.all(promises);
     //Now at this poitn we will get back our cpp output we will then parse that output here
-    return resultsparser(results);
+    return results;
 }
 
 const resultsparser = (results) => {
@@ -132,7 +171,7 @@ const resultsparser = (results) => {
     const body = {
         successful: successfulRequests,
         failed: failedRequests,
-        
+
     };
     console.log("Results are: ", body);
     return body;
@@ -166,5 +205,27 @@ function* generatecombinations(data) {
         yield combination;
     }
 }
+
+//The only function that is remaining
+//The fuzzy file manager
+const filetests = async ({ link, method, data, headers, requests, file }) => {
+
+
+
+
+
+
+
+
+    
+
+}
+
+
+
+
+
+
+
 
 export { apitestsController };
