@@ -1,5 +1,6 @@
 import { datainputconfigs, fileinputconfigs } from '../config/datainputconfigs.js';
 import fs from "fs";
+import path from "path";
 const gibberish = '/*/'
 
 const filerange = (() => {
@@ -47,14 +48,16 @@ const parsebody = (body, file) => {
         return [0, "Invalid method", 400];
     }
     //Now lets check the availblity of files
+    let multerfile = false;
     if (file && file !== undefined && file !== null) {
         body.fileavailable = true;
+        multerfile = true;
     }
-    if (body.fileavailable && (file === undefined || file === null)) {
-        //why this check to know if the endpoint is for file or not
-        return [0, `File is not provided but fileavailable is true
-            Add a valid file to the request or set fileavailable to false`, 400];
-    }
+    // if (body.fileavailable && (file === undefined || file === null)) {
+    //     //why this check to know if the endpoint is for file or not
+    //     return [0, `File is not provided but fileavailable is true
+    //         Add a valid file to the request or set fileavailable to false`, 400];
+    // }
 
     // Now how will we recive the data, so the plan is we will be uing json for the data and depeonds on the method we will use parms or json  body
     var data = body.data ?? gibberish; // This symbol make sure we can check the link safely
@@ -66,16 +69,21 @@ const parsebody = (body, file) => {
 
     //Now that we got the data exists now lets parse thsi data also 
     var output = [];
-    if (!body.fileavailable) {
+    if (!body.fileavailable && multerfile === false) {
         output = parseinputdata(data);
+    }
+    else if (body.fileavailable && multerfile === true) {
+        //Now need to create a multerfile handler also
     }
     else {
         output = filehandler(data, file);
+        //This will make sure we can check the file type in the next step
     }
     if (output[0] === 0) {
         return output;
         //This will save the extra computation to send the link also 
     }
+     output[1].multerfile = multerfile;
     // output[1][gibberish + "server" + gibberish] = body.requests ?? 100;
     output[1][gibberish + "server" + gibberish] = {
         "link": link,
@@ -156,7 +164,7 @@ const validatetherange = (objs) => {
     var { type, values, range } = objs;
     if (type === "" || type === undefined || type === null) {
 
-        return [0, "The type is not defined for the key" + key + "has no type:" + type, 401];
+        return [0, "The type is not defined for the key " + objs.fieldname + " has no type:" + type, 401];
 
     }
     type = type.toLowerCase();
@@ -284,6 +292,7 @@ const filehandler = (data, file) => {
     var finaldata = {};
     for (let i = 0; i < keys.length; i++) {
         let getfiles = [];
+        let types = data[keys[i]].type;
         if (data[keys[i]].type === "others") {
             // Handle the "others" type
             getfiles = checkfilepaths(data[keys[i]]);
@@ -294,16 +303,30 @@ const filehandler = (data, file) => {
             return getfiles;
         }
         finaldata[keys[i]] = getfiles[1];
+        finaldata[keys[i]].fieldname = keys[i]; // Add the fieldname property to the object
+        finaldata[keys[i]].mimetype =types; // Add the mimetype property to the object
 
     }
     return [1, finaldata, 200];
+    //Now the final data json is
+    /*
+    {
+        key1: { type: type, values: values, range: range, fieldname: key1 },
+        key2: { type: type, values: values, range: range, fieldname: key2 },
+}
+    so for each
+    for(const key in finaldata){
+    }
+*/
+
+
 }
 
 const filetypeverifier = (objs) => {
-
+    
     let { type, values, range } = objs;
     if (type === "" || type === undefined || type === null) {
-        return [0, "The type is not defined for the key" + key + "has no type:" + type +
+        return [0, "The type is not defined for the key" + objs.fieldname + "has no type:" + type+
             "\n Valid file types are : " + Object.keys(fileinputconfigs).join(", "), 401];
 
     }
@@ -319,25 +342,28 @@ const filetypeverifier = (objs) => {
 
 
     }
-    return [1, { type: type, values: values, range: range }, 200];
+    return [1, { type: type, values: totalpaths, range: range, filetypes: -1 }, 200];
 
 
 
 }
 const checkfilepaths = (data) => {
     // now need to check all the paths and see if they are valid or not
-    let { type, totalpaths, range } = data;
+    let { type, value, range } = data;
     let validpaths = [];
     let filesize = [];
-    for (const path of totalpaths) {
-        if (path === undefined || path === null || path === "") continue;
+    let filetypes = [];
+    // console.log("Checking file paths:", data);
+    for (const filepath of value) {
+        if (filepath === undefined || filepath === null || filepath === "") continue;
         try {
-            const stats = fs.statSync(path);
-            validpaths.push(path);
+            const stats = fs.statSync(filepath);
+            filetypes.push(path.extname(filepath)); // Get the file extension
+            validpaths.push(filepath);
             filesize.push(stats.size);
 
         } catch (err) {
-            console.error(`Error checking file path: ${path}`, err);
+            console.error(`Error checking file path: ${filepath}`, err);
         }
     }
 
@@ -346,27 +372,54 @@ const checkfilepaths = (data) => {
     }
     // return [1, { type: type, values: values, range: range }, 200];
     if (range !== undefined || range !== null || range.length !== 0) {
-        // means the user want us to send the random bytes to the server
-        //The ideas is , the start is simple , [0,liimit,step] , zero is the file size , and the limit is how much we want to send
-        //Now , we will create the ranges for each file now.
-        // that measn 
-        //this needs to be decided
-        // for (let i = 0; i < validpaths.length; i++) {
-        //     range.push(filesize[i]);
-        // }
 
-    }else{
-        range=[];//That measn the user only want us to send this file only and not send any random bytes to the server
+        for (let i = 0; i < validpaths.length; i++) {
+            // Decompose the range for each file
+            var filesizeranges = filerangecompostion(filesize[i], { range: range });
+        }
+        range = filesizeranges;
+
+
+    } else {
+        range = [];//That measn the user only want us to send this file only and not send any random bytes to the server
     }
 
 
 
 
 
-    return [1, { type: type, values: totalpaths, range: range }, 200];
+
+    return [1, { type: type, values: validpaths, range: range, filetypes: filetypes }, 200];
 
 
 }
+const filerangecompostion = (size, obj) => {
+    let toreturn = [];
+    //Now we dont know the sizes 
+    // [start, end, step] = obj.range;
+    let start = obj.range[0] ?? 0; //start is always the fil size
+    let end = obj.range[1] ?? size;
+    let step = obj.range[2] ?? 512;
+    // Check if the start and end values are valid
+    if (start < 0) //That measn the range start from zero to the totalfilzzesize
+    {
+        start = 0;
+    }
+    if (end < 0) {
+        //That means the range goes to the end of the file
+        end = size;
+    }
+
+    for (let i = start; i <= end; i += step) {
+        toreturn.push(i);
+    }
+
+    return toreturn;
+
+}
+
+
+
 
 
 export { parsebody, gibberish };

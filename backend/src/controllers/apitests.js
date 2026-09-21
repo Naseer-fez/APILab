@@ -1,6 +1,8 @@
 
 import { parsebody, gibberish } from '../services/apitests.js';
 import fs from 'fs';
+import {filemanager} from '../services/apitests_file.js';
+
 //gibberish is the speical symbol to diffrenct the user and server data
 
 const apitestsController = async (req, res) => {
@@ -29,6 +31,13 @@ const apitestsController = async (req, res) => {
     } else {
         sendingfunction = apitests;
     }
+    let filedata = null;
+    if (req.file) {
+        filedata = req.file;
+    }
+    if (server.fileavailable) {
+        filedata = data[1];
+    }
     var outputrate = await sendingfunction(
         {
             link: server.link,
@@ -36,7 +45,7 @@ const apitestsController = async (req, res) => {
             data: data[1],
             headers: server.headers,
             requests: server.requests,
-            file: req.file
+            file: filedata
         }
     );
     if (outputrate[0] === 1) {
@@ -210,15 +219,24 @@ function* generatecombinations(data) {
 //The fuzzy file manager
 const filetests = async ({ link, method, data, headers, requests, file }) => {
 
+    const promises = [];
+    console.log("The file is :", file);
+    for (let i = 0; i < requests; i++) {
+        //now lets send the total request to the servers
+        for (const { key, value } of Object.entries(file)) {
+            for (const size of value.range) {
+                var filemanageresult = await filemanger(file[key], size);
+            }
+        }
+        //Now let send this request
+        if (filemanageresult[0] === 1)
+            promises.push(sendrequest(link, method, headers, data,
+                filemanageresult[1].file, filemanageresult[1].fieldname));``
 
 
-
-
-
-
-
-    
-
+    }
+    const results = await Promise.all(promises);
+    return results;
 }
 
 
