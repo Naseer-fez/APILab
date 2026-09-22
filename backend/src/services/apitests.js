@@ -74,6 +74,8 @@ const parsebody = (body, file) => {
     }
     else if (body.fileavailable && multerfile === true) {
         //Now need to create a multerfile handler also
+        //This will be similar to the filehandler casue this time only the paths chnages so 
+        output = multerfilehandler(data, file);
     }
     else {
         output = filehandler(data, file);
@@ -83,7 +85,7 @@ const parsebody = (body, file) => {
         return output;
         //This will save the extra computation to send the link also 
     }
-     output[1].multerfile = multerfile;
+    output[1].multerfile = multerfile;
     // output[1][gibberish + "server" + gibberish] = body.requests ?? 100;
     output[1][gibberish + "server" + gibberish] = {
         "link": link,
@@ -304,7 +306,7 @@ const filehandler = (data, file) => {
         }
         finaldata[keys[i]] = getfiles[1];
         finaldata[keys[i]].fieldname = keys[i]; // Add the fieldname property to the object
-        finaldata[keys[i]].mimetype =types; // Add the mimetype property to the object
+        finaldata[keys[i]].mimetype = types; // Add the mimetype property to the object
 
     }
     return [1, finaldata, 200];
@@ -323,10 +325,10 @@ const filehandler = (data, file) => {
 }
 
 const filetypeverifier = (objs) => {
-    
+
     let { type, values, range } = objs;
     if (type === "" || type === undefined || type === null) {
-        return [0, "The type is not defined for the key" + objs.fieldname + "has no type:" + type+
+        return [0, "The type is not defined for the key" + objs.fieldname + "has no type:" + type +
             "\n Valid file types are : " + Object.keys(fileinputconfigs).join(", "), 401];
 
     }
@@ -417,7 +419,45 @@ const filerangecompostion = (size, obj) => {
     return toreturn;
 
 }
+const multerfilehandler = (data, file) => {
+    const keys = [];
+    const values = [];
+    for (const [key, value] of Object.entries(data)) {
+        keys.push(key);
+        values.push(value.values);
+    }
+    var finaldata = {};
+    const filearr = Array.isArray(file) ? file : [file];
 
+
+    for (const fileobj of filearr) {
+        if (!fileobj || !fileobj.path) {
+            // return [0, "Invalid file object provided", 400];
+            continue; // Skip this file and continue with the next one
+        }
+        const fieldname = fileobj.fieldname || "file";
+        const fieldConfig = data[fieldname] || {};
+        finaldata[fieldname] = {
+            fieldname: fieldname,
+            values: [fileobj.path],                                     // Server disk path
+            range: [],                                              // Range values
+            filetypes: [path.extname(fileobj.originalname || "")],     // ['.png']
+            type: fieldConfig.type || "multer",                        // Type
+            mimetype: fileobj.mimetype || "application/octet-stream"    // MIME type
+        };
+
+
+    }
+    if (Object.keys(finaldata).length === 0) {
+        return [0, "No file is provided by the user to the server", 400];
+
+    }
+
+
+    return [1, finaldata, 200];
+
+
+}
 
 
 

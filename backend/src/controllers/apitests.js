@@ -1,7 +1,8 @@
 
 import { parsebody, gibberish } from '../services/apitests.js';
 import fs from 'fs';
-import {filemanager} from '../services/apitests_file.js';
+import path from 'path';
+import { filemanager } from '../services/apitests_file.js';
 
 //gibberish is the speical symbol to diffrenct the user and server data
 
@@ -31,13 +32,8 @@ const apitestsController = async (req, res) => {
     } else {
         sendingfunction = apitests;
     }
-    let filedata = null;
-    if (req.file) {
-        filedata = req.file;
-    }
-    if (server.fileavailable) {
-        filedata = data[1];
-    }
+    let filedata = data[1];
+    
     var outputrate = await sendingfunction(
         {
             link: server.link,
@@ -71,10 +67,13 @@ const sendrequest = async (link, method, headers, obj = {}, file = null, fieldna
             for (const [key, value] of Object.entries(obj ?? {})) {
                 form.append(key, String(value));
             }
-            const filebuffer = await fs.promises.readFile(file.path);
-            const blob = new Blob([filebuffer], { type: file.mimetype });
+            const filePath = typeof file === 'string' ? file : file.path;
+            const originalName = typeof file === 'string' ? path.basename(file) : file.originalname;
+            const mimeType = typeof file === 'string' ? 'application/octet-stream' : (file.mimetype || 'application/octet-stream');
+            const filebuffer = await fs.promises.readFile(filePath);
+            const blob = new Blob([filebuffer], { type: mimeType });
             //Need to get this filed name
-            form.append(fieldname, blob, file.originalname);
+            form.append(fieldname, blob, originalName);
             result = await fetch(link, {
                 method: method.toUpperCase(),
                 headers: headers,
@@ -218,27 +217,48 @@ function* generatecombinations(data) {
 //The only function that is remaining
 //The fuzzy file manager
 const filetests = async ({ link, method, data, headers, requests, file }) => {
-
+    // console.log("File is: ", file);
     const promises = [];
-    console.log("The file is :", file);
-    for (let i = 0; i < requests; i++) {
-        //now lets send the total request to the servers
-        for (const { key, value } of Object.entries(file)) {
-            for (const size of value.range) {
-                var filemanageresult = await filemanger(file[key], size);
+    var ismulter = file.multerfile;
+    // delete file.multerfile;
+    const filelist = Object.values(file).filter(f => f && typeof f === 'object' && Array.isArray(f.values));
+    // const filelist = Array.isArray(file) ? file : [file];
+    // console.log("File list is: ", filelist);
+    // console.log("The file data is : ", file[0]);
+    console.log("The file data is : ", filelist);
+    let i = 0;
+    let mintry = 5; //fez
+    while (promises.length < requests) {
+        let sent = false;
+        for (const filedata of filelist) {
+            
+            for (const value of filedata.values) {
+                if (promises.length >= requests) {
+                    break;
+                }
+                var filemanageresult = await filemanager(filedata, value);
+                if (filemanageresult[0] == 1) {
+                    promises.push(sendrequest(link, method, headers, data,
+                        filemanageresult[1].file, filemanageresult[1].fieldname));
+                    i++;
+                    sent = true;
+
+                }
+
+            }
+            if (promises.length >= requests) {
+                break;
             }
         }
-        //Now let send this request
-        if (filemanageresult[0] === 1)
-            promises.push(sendrequest(link, method, headers, data,
-                filemanageresult[1].file, filemanageresult[1].fieldname));``
-
-
+        if (!sent) mintry--;
+        if (mintry <= 0) {
+            break; //minimum of 5 attempts
+        }
     }
+
     const results = await Promise.all(promises);
     return results;
 }
-
 
 
 
