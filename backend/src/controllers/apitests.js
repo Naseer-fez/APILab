@@ -33,7 +33,7 @@ const apitestsController = async (req, res) => {
         sendingfunction = apitests;
     }
     let filedata = data[1];
-    
+
     var outputrate = await sendingfunction(
         {
             link: server.link,
@@ -74,9 +74,12 @@ const sendrequest = async (link, method, headers, obj = {}, file = null, fieldna
             const blob = new Blob([filebuffer], { type: mimeType });
             //Need to get this filed name
             form.append(fieldname, blob, originalName);
+            const requestHeaders = { ...headers };
+            delete requestHeaders['Content-Type'];
+            delete requestHeaders['content-type'];
             result = await fetch(link, {
                 method: method.toUpperCase(),
-                headers: headers,
+                headers: requestHeaders,
                 body: form
             });
 
@@ -225,13 +228,13 @@ const filetests = async ({ link, method, data, headers, requests, file }) => {
     // const filelist = Array.isArray(file) ? file : [file];
     // console.log("File list is: ", filelist);
     // console.log("The file data is : ", file[0]);
-    console.log("The file data is : ", filelist);
+    // console.log("The file data is : ", filelist);
     let i = 0;
     let mintry = 5; //fez
     while (promises.length < requests) {
         let sent = false;
         for (const filedata of filelist) {
-            
+
             for (const value of filedata.values) {
                 if (promises.length >= requests) {
                     break;

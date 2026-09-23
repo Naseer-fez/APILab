@@ -1,13 +1,15 @@
 import express from 'express';
 import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
+
 const app = express();
 
 app.use(express.json()); //using the json parser
 app.post('/health', (req, res) => {
     console.log("Health check route is working");
     res.status(200).json({ "body": "Hello,World" });
-})
+}) 
+// dont remove this
 
 // Importing the routes
 
@@ -21,7 +23,9 @@ app.use('/api', concurrencetestRoutes);
 //importing the test routes
 import testRoutes from '../tests/sampleendpoint.js';
 app.use('/tests', testRoutes);
-
+//importing the file upload test route
+import fileUploadRoutes from '../tests/fileuploadep.js';
+app.use('/tests', fileUploadRoutes);
 
 
 export default app;

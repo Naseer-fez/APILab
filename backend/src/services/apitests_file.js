@@ -88,8 +88,8 @@ const handlemulterfile = async (file, filedname = "file") => {
         if (!stats.isFile()) {
             return [0, "Invalid file path", 400];
         }
-        filedname = file.fieldname || filedname; 
-        return [1, file, filedname, 200];
+        filedname = file.fieldname || filedname;
+        return [1, { "fieldname": filesobj.fieldname, "file": filepath }, 200];
 
 
     }

@@ -42,7 +42,7 @@ const parsebody = (body, file) => {
     }
 
     // NOw lets get the data poitn and the methods
-    const method = body.method.toUpperCase() ?? 'GET';
+    const method = (body.method ?? "GET").toUpperCase();
     const validmethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
     if (!validmethods.includes(method)) {
         return [0, "Invalid method", 400];
@@ -52,6 +52,10 @@ const parsebody = (body, file) => {
     if (file && file !== undefined && file !== null) {
         body.fileavailable = true;
         multerfile = true;
+    }else{
+    body.fileavailable=
+    body.fileavailable===true || body.fileavailable==="true";
+
     }
     // if (body.fileavailable && (file === undefined || file === null)) {
     //     //why this check to know if the endpoint is for file or not
@@ -344,14 +348,16 @@ const filetypeverifier = (objs) => {
 
 
     }
-    return [1, { type: type, values: totalpaths, range: range, filetypes: -1 }, 200];
+    return [1, { type: type, values: values, range: range, filetypes: -1 }, 200];
 
 
 
 }
 const checkfilepaths = (data) => {
     // now need to check all the paths and see if they are valid or not
-    let { type, value, range } = data;
+    let { type } = data;
+    let value=data.values || data.value||[];
+    let range = data.range || [];
     let validpaths = [];
     let filesize = [];
     let filetypes = [];
