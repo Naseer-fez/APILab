@@ -38,16 +38,16 @@ const parsebody = (body, file) => {
     if (file && file !== undefined && file !== null) {
         body.fileavailable = true;
         multerfile = true;
-    }else{
-        body.fileavailable=
-            body.fileavailable===true || body.fileavailable==="true";
+    } else {
+        body.fileavailable =
+            body.fileavailable === true || body.fileavailable === "true";
     }
 
     var headers = body.headers ?? gibberish;
     if (typeof headers === "string" && headers !== gibberish) {
         try {
             headers = JSON.parse(headers);
-        } catch {}
+        } catch { }
     }
     if (headers === gibberish) {
         headers = {
@@ -98,12 +98,64 @@ const parsebody = (body, file) => {
     }
     output[1].multerfile = multerfile;
     output[1].defaultval = output[1].defaultval ?? false;
+
+    // console.log("Output is: ", output);
     // output[1][gibberish + "server" + gibberish] = body.requests ?? 100;
+    const requests = (() => {
+        //first check is thsi valid output or not
+        if (output[0] <= 0) {
+            return 0; //doest matter anything
+        }
+
+        var req = body.requests;
+        var total = req ?? 1000;
+        if (req === undefined || req === null || typeof req !== "number") {
+            //still return the toal
+        }
+        else if (req <= 0) {
+            //measn we need to usee the full length of the data
+            // let totalrange = output[1].range.length ?? 100;
+            // let totalvalues = output[1].values.length ?? 1;
+            let totalrange = 0, totalvalues =0; //one req is not goona make much diff
+            //lets go though the output[1] now
+            for (const key in output[1]) {
+                if (key === "multerfile" || key === "defaultval") continue; //skip these keys
+                const obj = output[1][key];
+                if (obj.range && Array.isArray(obj.range)) {
+                    totalrange += obj.range.length;
+                } else {
+                    totalrange += 1; //if no range, count as 1
+                }
+                if (obj.values && Array.isArray(obj.values)) {
+                    totalvalues += obj.values.length;
+                } else {
+                    totalvalues += 1;
+                }
+
+
+            }
+            totalrange = totalrange || 1; //both cant be empty but stil just incase
+            totalvalues = totalvalues || 1; //both cant be empty but stil just incase
+
+            //both cant be empty but stil just incase
+            //lets check if both dont cross the int max limit
+            total = totalrange * totalvalues;
+            if (total > Number.MAX_SAFE_INTEGER) {
+                total = Number.MAX_SAFE_INTEGER;
+            }
+
+
+        }
+        return total;
+    })();
+
+    console.log("Requests is: ", requests);
+
     output[1][gibberish + "server" + gibberish] = {
         "link": link,
         "method": method,
         "headers": headers,
-        "requests": body.requests ?? 100,
+        "requests": requests ?? 100,
         "fileavailable": body.fileavailable ?? false //just to make sure we can check the file availability in the next step
     }
 
@@ -235,7 +287,7 @@ const validatetherange = (objs) => {
 }
 
 const decomposerange = (ref, type) => {
-    console.log("decomposing range for values:", ref.values);
+    // console.log("decomposing range for values:", ref.values);
     const values = ref.values;
     // console.log("Decomposing range for values:", values);
     // console.log("Type of values:", typeof values);
@@ -338,8 +390,8 @@ const filehandler = (data, file) => {
 
 const filetypeverifier = (objs) => {
 
-    var defaultval=false;
-    let { type, values, range } = objs;
+    var defaultval = false;
+    var { type, values, range } = objs;
     if (type === "" || type === undefined || type === null) {
         return [0, "The type is not defined for the key" + objs.fieldname + "has no type:" + type +
             "\n Valid file types are : " + Object.keys(fileinputconfigs).join(", "), 401];
@@ -347,16 +399,24 @@ const filetypeverifier = (objs) => {
     }
 
     if (values === undefined || values === null || values.length === 0) {
+        if (fileinputconfigs[type] === undefined) {
+            return [0, "The type is not valid for the key" + objs.fieldname + "has no type:" + type +
+                "\n Valid file types are : " + Object.keys(fileinputconfigs).join(", "), 401];
+        }
+
         values = fileinputconfigs[type];
-        defaultval=true;
+        // console.log("The type is :", type);
+        // console.log("The values are generated from the default values:", values);
+        defaultval = true;
         //Now we need to do this fro ranges also 
-        range = filerange;
+        if (range === undefined || range === null || range.length === 0) {
+            range = filerange
+        } else {
+            range = decomposerange({ values: range }, "int");
+        }
     } else {
-        //Now we have the values for say the correct extenstion given by the user now lets decompose the range
+
         range = decomposerange({ values: range }, "int"); //This will decompose the range for use
-        //type mostly will be string so for that reason  int is sent 
-
-
     }
     return [1, { type: type, values: values, range: range, filetypes: -1, defaultval: defaultval }, 200];
 
@@ -366,7 +426,7 @@ const filetypeverifier = (objs) => {
 const checkfilepaths = (data) => {
     // now need to check all the paths and see if they are valid or not
     let { type } = data;
-    let value=data.values || data.value||[];
+    let value = data.values || data.value || [];
     let range = data.range || [];
     let validpaths = [];
     let filesize = [];

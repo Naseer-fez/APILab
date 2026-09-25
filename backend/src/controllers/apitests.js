@@ -7,6 +7,7 @@ import { sendfiles } from '../services/apitests_stream.js';
 //gibberish is the speical symbol to diffrenct the user and server data
 
 const apitestsController = async (req, res) => {
+    // console.log("Hi")
     const data = parsebody(req.body, req.file); // we have pased the body data and now we can use it to send the request to the endpoint
     // console.log("Data is: ", data.values);
     // Time to validate this now 
@@ -216,21 +217,33 @@ function* generatecombinations(data) {
 //The only function that is remaining
 //The fuzzy file manager
 const filetests = async ({ link, method, data, headers, requests, file }) => {
+    // console.log("Parmeters received in filetests:", { link, method, data, headers, requests, file });
     const promises = [];
     // console.log("The data is: ", data);
     var ismulter = file.multerfile;
     const defaultval = data.file?.defaultval ?? file?.defaultval ?? false;
+    
     // console.log("The file is: ", file);
     const filelist = Object.values(file).filter(f => f && typeof f === 'object' && Array.isArray(f.values));
+    if(filelist.length === 0 && defaultval === true) {
+        //That means now we need to make this file list equal to the values
+
+    }
 
     let i = 0;
     let mintry = 5; //fez
     let indexofsize = 0;
+    let index=0;
     while (promises.length < requests) {
         let sent = false;
-
+        
+        // console.log("Default value is:(While loop) ", defaultval);
         for (const filedata of filelist) {
+            // console.log("File data is: ", filedata);
+            // console.log("(Inside the filedata loop)Default value is: ", defaultval);
             for (const value of filedata.values) {
+                // console.log("(Inside the value loop)Default value is: ", defaultval);
+                // console.log("the value is: ", filedata.range);
                 if (promises.length >= requests) {
                     break;
                 }

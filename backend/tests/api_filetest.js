@@ -9,22 +9,27 @@ const FILE_PATHS = [
 
 // true  -> multipart/form-data + Multer
 // false -> application/json + local file paths
-var USE_MULTER = true; // Toggle between Multer and JSON modes
-
+var USE_MULTER = !true; // Toggle between Multer and JSON modes
 const testData = {
     link: "http://127.0.0.1:3000/tests/filetest",
     endpoint: "",
     endpointavailable: false,
     method: "POST",
-    requests: 1,
+    requests: 0,
     headers: {},
     fileavailable: true,
     data: {
-        file: {
+        "file": {
             //lets send a valid type now
-            type: "others",
-            value: ["D:\\CODE\\JavaScript\\Projects\\APIintegration\\backend\\goal.md"],
-            range: []
+            type: "text",
+            value: [],
+            range: [2000, 4000, 1000],
+        },
+        "data": {
+            //lets send a valid type now
+            type: "text",
+            value: [],
+            range: [2000, 4000, 1000],
         }
     }
 };
@@ -105,17 +110,18 @@ async function main() {
     while (true) {
         // IMPORTANT: wait for the current test to finish
         // before starting another one.
-        USE_MULTER = !USE_MULTER; // Toggle between Multer and JSON modes
+        // USE_MULTER = !USE_MULTER; // Toggle between Multer and JSON modes
         // if(USE_MULTER) {
         //     console.log("Running test with Multer file upload (multipart/form-data)...");
         // } else {
         //     console.log("Running test with JSON file paths (application/json)...");
         // }
         // USE_MULTER = !USE_MULTER; // Toggle between Multer and JSON modes
+        //    print("Running test with USE_MULTER =", USE_MULTER);
         await runTest();
-        
+        // break; // Remove this break if you want to run the test continuously
         // Sleep for 2 seconds
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
     }
 }
 

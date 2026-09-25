@@ -36,6 +36,7 @@ So this function will take the full above file objs or else Multer file objs
 now multer is simplely handled by  
  
 */
+import crypto from "crypto";
 const userssize =
     Number.isFinite(User.Streamdata) && User.Streamdata > 0
         ? User.Streamdata
@@ -46,43 +47,23 @@ const BUFFER_SIZE = 1024 * 1024 * userssize;
 const filemanager = async (filesobj, filepath, size, defaultval, ismulter) => {
 
     // console.log("File manager called with parameters:", { filesobj, filepath, size, defaultval, ismulter }); 
-
-
     if (!filesobj || typeof filesobj !== "object") {
         return [0, "Invalid file object", 400];
     }
-
+    let filefunction = null;
     if (filesobj.multerfile || ismulter) {
-        //that measn  
-        // console.log("Multer file detected, handling with handlemulterfile");
-        return handlemulterfile(filesobj); // no need for the index direcly we send it  
-
+        filefunction = handlemulterfile; // no need for the index direcly we send it  
     }
-
-    if (defaultval === false) {
-        return createbuffer(filesobj, filepath, size);
+    else if (defaultval === false) {
+        filefunction = createbuffer;
     }
-
-    if (defaultval === true) {
-        console.log("Default value is true, sending zerosizefile"); //In this we will add the size  
-
-        const stream = createbuffer(filesobj, filepath, size);
-
-        const toreturn = {
-            "fieldname": filesobj.fieldname,
-            "file": null,
-            stream: stream
-        };
-
-        return [1, toreturn, 200];
+    else if (defaultval === true) {
+        filefunction = handeldefaultfile;
+    } else {
+        filefunction = createbuffer;
     }
-
-    //For testing  
-    //Now the default val is not working 
-
-    return createbuffer(filesobj, filepath, size);
-
-    //Now lets send the default files  
+    // console.log("Selected file function:", filefunction.name);
+    return await filefunction(filesobj, filepath, size);
 
 }
 
@@ -129,11 +110,12 @@ const createbuffer = async (filesobj, filepath, size, start = 0) => {
         mimetype: filesobj.mimetype || "application/octet-stream",
         stream: buffer
     };
+    console.log("The added buffer amount is", buffer);
     return [1, toreturn, 200];
 }
 //This will lets us stream the file to save the ram  
 
-const readbytesfromfile = async function* (filepath, size, start, end){
+const readbytesfromfile = async function* (filepath, size, start, end) {
 
     // const buffer = Buffer.alloc(end - start); 
     const file = await fs.open(filepath, "r");
@@ -202,19 +184,76 @@ const readbytesfromfile = async function* (filepath, size, start, end){
 
 };
 
+const handeldefaultfile = async (filesobj, filepath, size) => {
+    /*Now this is the hardest and the most intresting part of the endpoint
+    Cause in this we will be trying to send or make a file and send that whihc is the hardest part
+    But we already have a bytes reader so , my goal is to use this only 
+    Cause we have a pipeline , we can use that but we need to creata a random file first
+    after which send that file only and dlete this file later
+     console.log("The default file is being handled with parameters:", { filesobj, filepath, size });
+    const filetype=filepath //cause value is file path
+    I can do two things here eihter have a colection of this files or just random bytes
+    better to creata buffer/10 size file 
+    Now the things about the filename cause we haev the file data , we can eaily compare and see if we have created the file or not
+    */
+    const filetype = filepath;
+    var filename = User.filenames || "randomfile";
+    filename = filename + "." + filetype; //this is the file name with the extenstion
+    const folderpath = User.folderpath || "./uploads/"; //this is the temppath
+    //now lets see if the file is new or not
+    filepath = folderpath + filename; //this is the full path of the file
+    await fs.mkdir(folderpath, { recursive: true });
+    if (size == filesobj.range[0]) {
+        //Need to create a new file 
+        //first lets make the folder if not exist
 
-const createzerosizefile = async function* (size) {
-    let remaining = size;
+        const randomdata = crypto.randomBytes(size);  //better cause that is the users stating point
+        await fs.writeFile(filepath, randomdata);
+        //file is created now
+    } else {
+        //once check the file is presnt or not
+        try {
 
-    while (remaining > 0) {
-        const towrite = Math.min(BUFFER_SIZE, remaining);
-        yield Buffer.alloc(towrite, 0);
-        remaining -= towrite;
+            await fs.access(filepath);
+            //file is present 
+        } catch (error) {
+            //file is not present 
+            const randomdata = crypto.randomBytes(size); //maybe deleted for somereason
+            await fs.writeFile(filepath, randomdata);
+        }
+
     }
-};
+    const stats = await fs.stat(filepath);
+    const readstream = readbytesfromfile(filepath, stats.size, 0, size);
+    const islast = size === filesobj.range[filesobj.range.length - 1];
+    const stream = async function* () {
+        try {
+            for await (const chunk of readstream) {
+                yield chunk; //sending the chunks
+            }
+        }
+        finally {
+            if (islast) {
+                await fs.unlink(filepath);
+            }
+
+        }
+    }(); //calling the function imeditenly 
+    return [1, {
+        fieldname: filesobj.fieldname,
+        file: filepath,
+        mimetype: filesobj.mimetype || "application/octet-stream",
+        stream: stream
+    }, 200];
+
+}
 
 
-const handlemulterfile = async (file, filedname = "file") => {
+
+
+
+//To match all functions
+const handlemulterfile = async (file, filedname = "file", filepath = undefined, size = 0) => {
     try {
 
         const filepath = file.path || file.values?.[0];
