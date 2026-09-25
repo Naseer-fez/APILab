@@ -90,6 +90,7 @@ const parsebody = (body, file) => {
         //This will save the extra computation to send the link also 
     }
     output[1].multerfile = multerfile;
+    output[1].defaultval = output[1].defaultval ?? false;
     // output[1][gibberish + "server" + gibberish] = body.requests ?? 100;
     output[1][gibberish + "server" + gibberish] = {
         "link": link,
@@ -330,6 +331,7 @@ const filehandler = (data, file) => {
 
 const filetypeverifier = (objs) => {
 
+    var defaultval=false;
     let { type, values, range } = objs;
     if (type === "" || type === undefined || type === null) {
         return [0, "The type is not defined for the key" + objs.fieldname + "has no type:" + type +
@@ -339,6 +341,7 @@ const filetypeverifier = (objs) => {
 
     if (values === undefined || values === null || values.length === 0) {
         values = fileinputconfigs[type];
+        defaultval=true;
         //Now we need to do this fro ranges also 
         range = filerange;
     } else {
@@ -348,7 +351,7 @@ const filetypeverifier = (objs) => {
 
 
     }
-    return [1, { type: type, values: values, range: range, filetypes: -1 }, 200];
+    return [1, { type: type, values: values, range: range, filetypes: -1, defaultval: defaultval }, 200];
 
 
 

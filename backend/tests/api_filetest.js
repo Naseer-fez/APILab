@@ -9,20 +9,20 @@ const FILE_PATHS = [
 
 // true  -> multipart/form-data + Multer
 // false -> application/json + local file paths
-var USE_MULTER = true;
+var USE_MULTER = false;
 
 const testData = {
     link: "http://127.0.0.1:3000/tests/filetest",
     endpoint: "",
     endpointavailable: false,
     method: "POST",
-    requests: 100,
+    requests: 1,
     headers: {},
     fileavailable: true,
     data: {
         file: {
-            type: "others",
-            value: FILE_PATHS,
+            type: "text",
+            value: [],
             range: []
         }
     }
@@ -109,11 +109,11 @@ async function main() {
         // } else {
         //     console.log("Running test with JSON file paths (application/json)...");
         // }
-        USE_MULTER = !USE_MULTER; // Toggle between Multer and JSON modes
+        // USE_MULTER = !USE_MULTER; // Toggle between Multer and JSON modes
         await runTest();
         
         // Sleep for 2 seconds
-        await new Promise(resolve => setTimeout(resolve, 8000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
     }
 }
 

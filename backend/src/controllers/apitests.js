@@ -3,12 +3,12 @@ import { parsebody, gibberish } from '../services/apitests.js';
 import fs from 'fs';
 import path from 'path';
 import { filemanager } from '../services/apitests_file.js';
-
+import { sendfiles } from '../services/apitests_stream.js';
 //gibberish is the speical symbol to diffrenct the user and server data
 
 const apitestsController = async (req, res) => {
     const data = parsebody(req.body, req.file); // we have pased the body data and now we can use it to send the request to the endpoint
-    // console.log("Data is: ", data);
+    // console.log("Data is: ", data.values);
     // Time to validate this now 
     if (data[0] === -1 || data[0] === 0) {
         return res.status(data[2]).json({
@@ -63,27 +63,9 @@ const sendrequest = async (link, method, headers, obj = {}, file = null, fieldna
     try {
         let result;
         if (file) {
-            const form = new FormData();
-            for (const [key, value] of Object.entries(obj ?? {})) {
-                form.append(key, String(value));
-            }
-            const filePath = typeof file === 'string' ? file : file.path;
-            const originalName = typeof file === 'string' ? path.basename(file) : file.originalname;
-            const mimeType = typeof file === 'string' ? 'application/octet-stream' : (file.mimetype || 'application/octet-stream');
-            const filebuffer = await fs.promises.readFile(filePath);
-            const blob = new Blob([filebuffer], { type: mimeType });
-            //Need to get this filed name
-            form.append(fieldname, blob, originalName);
-            const requestHeaders = { ...headers };
-            delete requestHeaders['Content-Type'];
-            delete requestHeaders['content-type'];
-            result = await fetch(link, {
-                method: method.toUpperCase(),
-                headers: requestHeaders,
-                body: form
-            });
-
-
+            //bettet to create anoter function for the files
+            result = await sendfiles(link, method, headers, obj, file, fieldname);
+            //To send both the multiformat and the rawbytes to save the ram 
         }
 
 
@@ -135,6 +117,8 @@ const sendrequest = async (link, method, headers, obj = {}, file = null, fieldna
 }
 // In this function we can call the cpp code later on to impove the speed and to send the maxium requests to the server
 //for now it will be sending requests through node 
+
+
 
 //Need to work on this combination and how the requests are suppoed to go 
 const apitests = async ({ link, method, data, headers, requests, file }) => {
@@ -220,26 +204,32 @@ function* generatecombinations(data) {
 //The only function that is remaining
 //The fuzzy file manager
 const filetests = async ({ link, method, data, headers, requests, file }) => {
-    // console.log("File is: ", file);
     const promises = [];
+    // console.log("The data is: ", data);
     var ismulter = file.multerfile;
-    // delete file.multerfile;
+    const defaultval = data.file?.defaultval ?? file?.defaultval ?? false;
+    console.log("The file is: ", file);
     const filelist = Object.values(file).filter(f => f && typeof f === 'object' && Array.isArray(f.values));
-    // const filelist = Array.isArray(file) ? file : [file];
-    // console.log("File list is: ", filelist);
-    // console.log("The file data is : ", file[0]);
-    // console.log("The file data is : ", filelist);
+
     let i = 0;
     let mintry = 5; //fez
+    let indexofsize = 0;
     while (promises.length < requests) {
         let sent = false;
-        for (const filedata of filelist) {
 
+        for (const filedata of filelist) {
             for (const value of filedata.values) {
                 if (promises.length >= requests) {
                     break;
                 }
-                var filemanageresult = await filemanager(filedata, value);
+                var size = filedata.range?.[indexofsize] ?? 0; //to increase the size of the file
+                indexofsize++;
+                //We have abstracted this now
+                var filemanageresult = await filemanager(filedata, value, //the path of the file
+                    size, //the size to send 
+                    defaultval,//If the user has not send a file , but want to sedn random file 
+                    ismulter //directly send the multer file 
+                );
                 if (filemanageresult[0] == 1) {
                     promises.push(sendrequest(link, method, headers, data,
                         filemanageresult[1].file, filemanageresult[1].fieldname));
