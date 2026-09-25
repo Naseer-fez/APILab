@@ -11,16 +11,16 @@ testRoutes.post('/apitest', async (req, res) => {
     // console.log("The body is :", req.body);
     // console.log("Hello,world");
     // console.log("Hiiii!!!!");
-    var name = 0, age = 0, salary = 0;
+    var name = 0, age = 0, salary = 0, arr = [];
     try {
-        ({ name, age, salary } = req.body || req.params.data || {});
+        ({ name, age, salary,arr } = req.body || req.params.data || {});
     } catch (err) {
         // console.error("Error parsing request data:", err);
         console.log("2")
         return res.status(400).json({ message: 'Bad Request' });
     }
     try {
-        const file = await fs.appendFile(path, `time: ${new Date().toISOString()}, Name: ${name}, Age: ${age}, Salary: ${salary}\n`);
+        const file = await fs.appendFile(path, `time: ${new Date().toISOString()}, Name: ${name}, Age: ${age}, Salary: ${salary}, Array: ${arr} \n`);
     } catch (err) {
         console.error("Error writing to file:", err);
         console.log("4")

@@ -14,6 +14,9 @@ const filerange = (() => {
     return range;
 })(); //This will genrate a default range for us
 
+const cantdecompose = ["boolean", "array", "object", "string", "null"];
+//these are the types which we cant decompose so we will just return the values as it is
+
 const parsebody = (body, file) => {
 
     // console.log("Body is: ", body);
@@ -116,7 +119,7 @@ const parsebody = (body, file) => {
             //measn we need to usee the full length of the data
             // let totalrange = output[1].range.length ?? 100;
             // let totalvalues = output[1].values.length ?? 1;
-            let totalrange = 0, totalvalues =0; //one req is not goona make much diff
+            let totalrange = 0, totalvalues = 0; //one req is not goona make much diff
             //lets go though the output[1] now
             for (const key in output[1]) {
                 if (key === "multerfile" || key === "defaultval") continue; //skip these keys
@@ -227,6 +230,7 @@ const parseinputdata = (data) => {
 
 }
 const validatetherange = (objs) => {
+    var decompose = true
     var { type, values, range } = objs;
     if (type === "" || type === undefined || type === null) {
 
@@ -259,28 +263,19 @@ const validatetherange = (objs) => {
             range = [] //just to be sure 
 
         } else {
+            //this else means we have range
+            decompose = !cantdecompose.includes(type);
 
-            // That measn we have a range
-            // console.log("Type is :", type);
-            let ref = { values: range }; // so that we can then transfer that to the values
-            // decomposerange(ref, type);
-            // values = ref.values;
-
-            if (type !== "string") {
-                values = decomposerange(ref, type);
-            }
         }
     }
     else {
         // we have the values so need to do anything just decompose them if needed
-        let ref = { values: values };
-        // decomposerange(ref, type);
-        // values = ref.values;
-        if (type !== "string") {
-            values = decomposerange(ref, type);
-        }
+        decompose = !cantdecompose.includes(type);
         //  console.log("The values are generated from the values:", values);
 
+    }
+    if (decompose) {
+        range = decomposerange({ values: range }, type);
     }
     return [1, { type: type, values: values, range: range }, 200];
 

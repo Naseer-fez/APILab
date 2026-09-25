@@ -5,10 +5,13 @@
 //             "string": ["", " ", 0,12,"\0"]
 
 // }
+//Need to fill this file completely with all the data types and their values and ranges
+
+
 const datainputconfigs = {
     "int": [
         // Boundary values
-        Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, 
+        Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER,
         // JavaScript number quirks
         NaN, Infinity, -Infinity, -0,
         // Different base representations (Hex, Binary, Octal)
@@ -50,8 +53,19 @@ const datainputconfigs = {
         // Extreme length (using a method to generate instead of hardcoding)
         // Coercion attempts (passing non-strings to a string parameter)
         null, undefined, 12345, []
-    ]
+    ],
+    "boolean": [
+        true, false, "true", "false", 1, 0, "1", "0", null, undefined, [], {}
+    ],
+    "array": [
+        [], [1], [1, 2, 3], ["a", "b", "c"], [null, undefined, NaN],
+        [[1, 2], [3, 4]], [{ key: "value" }, { another: "object" }]],
+    "object": [
+        {}, { key: "value" }, { num: 1, str: "text" }, { nested: { a: 1 } },
+        { arr: [1, 2, 3] }, { nullValue: null, undefinedValue: undefined }]
+
 }
+
 
 
 const fileinputconfigs = {
