@@ -5,13 +5,13 @@ const router = express.Router();
 
 router.post('/apitests', apitestsController);
 
-router.post('/apitests/file',upload.single('file'), apitestsController);
+router.post('/apitests/file', upload.single('file'), apitestsController);
 
 /*
 This route is used to send a varaity of diffrnet requests to the server and to verfiry the result back 
 This data is used to test the validation of the API and to see how it will handele diffrent types of data
 For now the data types are {
-"INT" "Flaot" "STRING" The primitve data types
+"INT" "Flaot" "STRING"  "array" "object" "boolean"
 } 
 More diffrent variety of data types will be added in the future
 The data will be sent in the body of the reqeust  in the form of 
@@ -46,8 +46,36 @@ This takes diffrent types of data [start,end,step] can be used for all the avali
 the data in this can be 2d or 3d at lasta ll the data will be converted to 1d array and then sent to the server
 }
 }
-**NOTE** At this moment the data is only premetive data types only
+**NOTE** Non- premetive data are available 
+**NOTE**No fuzzy matching is done on the keys so , only input the valid keys
+example of data
+ {
+    "name": {
+        "type": "string"
+        ,"values": ['abc', 'def', 'ghi']
+        // ,"range": ['aba', 'zzy', 1]
 
+    },
+    "age": {
+        "type": "int"
+        // ,"values": [0, 1, 2, 3, 4, 5]
+        // ,"range": [0, 100]
+
+    },
+    "salary": {
+        "type": "float"
+        // ,"values": [1.0, 2.0, 3.0, 4.0, 5.0]
+        // ,"range": [0.0, 100.0,0.1]
+
+    },
+    "arr":{
+        "type": "array"
+
+    }
+}
+
+
+______________________________________________________________________________
 Now for the filetests
 
 will have the same structure as the regular tests
@@ -69,15 +97,33 @@ random bytes will be sent to the server to see how it will handele the data The 
 You can add any number of files in the values array 
 
 //If paths dont exist then the files which are found will be sent 
-
+**NOTE** If request is zero or negative then the total length of the data[values * range] will be total reqs sent
 
 }
-
-
-
-
-
-
+Example of data 
+{
+    link: "http://127.0.0.1:3000/tests/filetest",
+    endpoint: "",
+    endpointavailable: false,
+    method: "POST",
+    requests: 0,
+    headers: {},
+    fileavailable: true,
+    data: {
+        "file": {
+            //lets send a valid type now
+            type: "text",
+            value: [],
+            range: [2000, 4000, 1000],
+        },
+        "data": {
+            //lets send a valid type now
+            type: "text",
+            value: [],
+            range: [2000, 4000, 1000],
+        }
+    }
+}
 */
 
 
