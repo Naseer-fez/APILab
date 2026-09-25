@@ -9,7 +9,7 @@ const FILE_PATHS = [
 
 // true  -> multipart/form-data + Multer
 // false -> application/json + local file paths
-var USE_MULTER = false;
+var USE_MULTER = true; // Toggle between Multer and JSON modes
 
 const testData = {
     link: "http://127.0.0.1:3000/tests/filetest",
@@ -21,8 +21,9 @@ const testData = {
     fileavailable: true,
     data: {
         file: {
-            type: "text",
-            value: [],
+            //lets send a valid type now
+            type: "others",
+            value: ["D:\\CODE\\JavaScript\\Projects\\APIintegration\\backend\\goal.md"],
             range: []
         }
     }
@@ -92,7 +93,7 @@ async function runTest() {
         console.log("Status:", response.status);
         console.log(
             "Response:",
-            JSON.stringify(result, null, 2)
+            JSON.stringify(result.message, null, 2)
         );
 
     } catch (error) {
@@ -104,6 +105,7 @@ async function main() {
     while (true) {
         // IMPORTANT: wait for the current test to finish
         // before starting another one.
+        USE_MULTER = !USE_MULTER; // Toggle between Multer and JSON modes
         // if(USE_MULTER) {
         //     console.log("Running test with Multer file upload (multipart/form-data)...");
         // } else {

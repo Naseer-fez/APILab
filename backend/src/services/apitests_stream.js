@@ -88,7 +88,6 @@ const sendfiles = async (
         response.status
     ];
 };
-
 const createMultipartStream = async function* (
     obj,
     filestream,
@@ -101,12 +100,15 @@ const createMultipartStream = async function* (
     for (const key in obj) {
         if (
             key === "append" ||
-            key === "appenddata"
+            key === "appenddata" ||
+            key === fieldname ||
+            key === "multerfile" ||
+            key === "defaultval"
         ) {
             continue;
         }
 
-        if (obj[key] == null) {
+        if (obj[key] == null || typeof obj[key] === "object") {
             continue;
         }
 
@@ -126,7 +128,7 @@ const createMultipartStream = async function* (
         fieldname +
         '"; filename="' +
         filename +
-        '"\r\n" +
+        '"\r\n' +
         "Content-Type: " +
         mimetype +
         "\r\n\r\n"

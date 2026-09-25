@@ -33,12 +33,29 @@ const parsebody = (body, file) => {
          * by the endpoint so that is why this option is given it makes sure that we dont fill the worng data
          */
     }
+    //Now lets check the availblity of files
+    let multerfile = false;
+    if (file && file !== undefined && file !== null) {
+        body.fileavailable = true;
+        multerfile = true;
+    }else{
+        body.fileavailable=
+            body.fileavailable===true || body.fileavailable==="true";
+    }
+
     var headers = body.headers ?? gibberish;
+    if (typeof headers === "string" && headers !== gibberish) {
+        try {
+            headers = JSON.parse(headers);
+        } catch {}
+    }
     if (headers === gibberish) {
         headers = {
-            "Content-Type": "application/json",
             "Accept": "application/json"
-        };//Now we need to give the default headers so that we can send the request to the server
+        };
+        if (!body.fileavailable) {
+            headers["Content-Type"] = "application/json";
+        }
     }
 
     // NOw lets get the data poitn and the methods
@@ -46,16 +63,6 @@ const parsebody = (body, file) => {
     const validmethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
     if (!validmethods.includes(method)) {
         return [0, "Invalid method", 400];
-    }
-    //Now lets check the availblity of files
-    let multerfile = false;
-    if (file && file !== undefined && file !== null) {
-        body.fileavailable = true;
-        multerfile = true;
-    }else{
-    body.fileavailable=
-    body.fileavailable===true || body.fileavailable==="true";
-
     }
     // if (body.fileavailable && (file === undefined || file === null)) {
     //     //why this check to know if the endpoint is for file or not
@@ -382,7 +389,7 @@ const checkfilepaths = (data) => {
         return [0, "No valid file paths provided", 400];
     }
     // return [1, { type: type, values: values, range: range }, 200];
-    if (range !== undefined || range !== null || range.length !== 0) {
+    if (range && range.length > 0) {
 
         for (let i = 0; i < validpaths.length; i++) {
             // Decompose the range for each file
@@ -448,6 +455,7 @@ const multerfilehandler = (data, file) => {
         const fieldConfig = data[fieldname] || {};
         finaldata[fieldname] = {
             fieldname: fieldname,
+            path: fileobj.path,
             values: [fileobj.path],                                     // Server disk path
             range: [],                                              // Range values
             filetypes: [path.extname(fileobj.originalname || "")],     // ['.png']

@@ -64,7 +64,19 @@ const sendrequest = async (link, method, headers, obj = {}, file = null, fieldna
         let result;
         if (file) {
             //bettet to create anoter function for the files
-            result = await sendfiles(link, method, headers, obj, file, fieldname);
+            const fileresult = await sendfiles(link, method, headers, obj, file, fieldname);
+        //    result = fileresult[1];
+            if (fileresult[0] === 1) {
+                result = fileresult[1];
+            } else {
+                return {
+                    ok: false,
+                    status: fileresult[2] || 400,
+                    statusText: fileresult[1] || "File send error",
+                    response: fileresult[1] || "File send error",
+                    datasent: obj
+                };
+            }
             //To send both the multiformat and the rawbytes to save the ram 
         }
 
@@ -208,7 +220,7 @@ const filetests = async ({ link, method, data, headers, requests, file }) => {
     // console.log("The data is: ", data);
     var ismulter = file.multerfile;
     const defaultval = data.file?.defaultval ?? file?.defaultval ?? false;
-    console.log("The file is: ", file);
+    // console.log("The file is: ", file);
     const filelist = Object.values(file).filter(f => f && typeof f === 'object' && Array.isArray(f.values));
 
     let i = 0;
@@ -232,7 +244,7 @@ const filetests = async ({ link, method, data, headers, requests, file }) => {
                 );
                 if (filemanageresult[0] == 1) {
                     promises.push(sendrequest(link, method, headers, data,
-                        filemanageresult[1].file, filemanageresult[1].fieldname));
+                        filemanageresult[1], filemanageresult[1].fieldname));
                     i++;
                     sent = true;
 

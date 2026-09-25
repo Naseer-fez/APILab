@@ -54,7 +54,7 @@ const filemanager = async (filesobj, filepath, size, defaultval, ismulter) => {
 
     if (filesobj.multerfile || ismulter) {
         //that measn  
-        console.log("Multer file detected, handling with handlemulterfile");
+        // console.log("Multer file detected, handling with handlemulterfile");
         return handlemulterfile(filesobj); // no need for the index direcly we send it  
 
     }
@@ -66,7 +66,7 @@ const filemanager = async (filesobj, filepath, size, defaultval, ismulter) => {
     if (defaultval === true) {
         console.log("Default value is true, sending zerosizefile"); //In this we will add the size  
 
-        const stream = createzerosizefile(size);
+        const stream = createbuffer(filesobj, filepath, size);
 
         const toreturn = {
             "fieldname": filesobj.fieldname,
@@ -116,7 +116,8 @@ const createbuffer = async (filesobj, filepath, size, start = 0) => {
 
     const filesize = stats.size;
     const startIndex = start;
-    const endindex = startIndex + size;
+    const sendSize = size > 0 ? size : filesize;
+    const endindex = startIndex + sendSize;
     //now if the endindex if grete then lets do receurison and appednd it data of the file , if it is 2.5 time then app 
 
     var buffer = readbytesfromfile(filepath, filesize, startIndex, endindex);
@@ -132,7 +133,7 @@ const createbuffer = async (filesobj, filepath, size, start = 0) => {
 }
 //This will lets us stream the file to save the ram  
 
-const readbytesfromfile = async function* (filepath, size, start, end) => {
+const readbytesfromfile = async function* (filepath, size, start, end){
 
     // const buffer = Buffer.alloc(end - start); 
     const file = await fs.open(filepath, "r");
@@ -216,7 +217,9 @@ const createzerosizefile = async function* (size) {
 const handlemulterfile = async (file, filedname = "file") => {
     try {
 
-        const stats = await fs.stat(file.path);
+        const filepath = file.path || file.values?.[0];
+
+        const stats = await fs.stat(filepath);
 
         if (!stats.isFile()) {
             return [0, "Invalid file path", 400];
@@ -225,7 +228,7 @@ const handlemulterfile = async (file, filedname = "file") => {
         filedname = file.fieldname || filedname;
 
         const stream = readbytesfromfile(
-            file.path,
+            filepath,
             stats.size,
             0,
             stats.size
@@ -235,7 +238,7 @@ const handlemulterfile = async (file, filedname = "file") => {
             1,
             {
                 "fieldname": filedname,
-                "file": file.path,
+                "file": filepath,
                 "mimetype": file.mimetype || "application/octet-stream",
                 stream: stream
             },
