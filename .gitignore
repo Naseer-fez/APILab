@@ -40,3 +40,4 @@ logs/
 Thumbs.db
 .vscode/
 .idea/
+backend/uploads/
