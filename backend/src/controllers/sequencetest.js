@@ -1,14 +1,14 @@
+import { parsebody } from '../services/sequencetest.js';
 
 
+const sequencetestController = async (req, res) => {
 
-const sequencetestController=(req, res) => {
-  
+    const body = await parsebody(req.body,req.file);
 
-res.status(200).json({ message: 'Sequencetest controller is working!' });
 
     
 }
 
 
 
-export  {sequencetestController};
+export { sequencetestController };
