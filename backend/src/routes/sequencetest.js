@@ -32,7 +32,7 @@ request":[
 "data":{} //This is the data that is to be sent to the server if the method is get 
 then the data will be sent as query params else in the JSON body of the request
 "storedata":true, //This is used to store the data from the server
-"filepath":"", //This is the path to the file that is to be sent to the server
+"filedata":"", //This is the path to the file that is to be sent to the server
 "fileavailable": false,  if this is true then the file will be serched from either the data json or the uploaded file 
  or the filepath provided
 A file path will be taken from the data if provided or else the file upload direcly will also be used 
@@ -45,6 +45,20 @@ A file path will be taken from the data if provided or else the file upload dire
 //Check this section below
 
 },
+//filedata  takes a object 
+
+{
+"data": {
+            //lets send a valid type now
+            type: "text",
+            value: [],}
+//the key is the name of the file that is to be sent to the server
+//value is the path of the file to be sent one API cna have multiple file also 
+//If the file is uploded and the paths are provided then the file will use the uploaded file and the path will be ignored unless the keys are same
+
+}
+
+
 //second request now 
 ***NOTE***
 [useheder] , [usedata] ,[ignoreerrors] [expectedstatus]
@@ -91,9 +105,15 @@ condition:{
 "header":{
 "auth":"bearer {{header.auth}}"
 //here the system will automatically add the auth to the header
-"removelist":[] 
+"toremoveheaders":[] 
 //This will remove all the heders in the list ,
 //if this is set to -1 then all the heders will be removed except the presnt header from the data 
+}
+"body":{
+"somekey":"{{body.somekey}}"
+"toremovedata":[] //This will remove all the body in the list ,
+
+
 }
 "nextdata":{} You can also set the data in the present request for the next request
 "overwritenextdata":true //This is used to overwrite the data in the next request if this is set to false then the data will be merged with the next request data
