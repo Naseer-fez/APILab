@@ -1,11 +1,11 @@
 import fs from "fs/promises";
+import path from "path";
 
 
-
-const parsebody = async (body, file, global = {},first=1) => {
+const parsebody = async (body, file, global = {}, first = 1) => {
     //First lets Parse the link 
-    var link = await pasrselink(body.link, body.endpoint, body.endpointavailble);
-    
+    var link = await pasrselink(body.link, body.endpoint, body.endpointavailble, global.link ?? null);
+
     if (link[0] == null) {
         return [0, {
             "message": link[1],
@@ -28,24 +28,46 @@ const parsebody = async (body, file, global = {},first=1) => {
             }
         }, fileddata[2]];
     }
-    var fileavailable = fileddata[0]== -1 ? false : true; //measn the fileis not availbe
+    var fileavailable = fileddata[0] == -1 ? false : true; //measn the fileis not availbe
     var method = methodparser(body.method, global.method);
     var headers = parsedata(body.headers, body.toremoveheaders, body.headertostore); //simple enough
     var data = parsedata(body.data, body.toremovedata, body.datatostore); //if not provided then it will be empty object
     //the third paarmeter is the data that is to be stored given by the user
     var storeheader = body.storeheader ?? global.storeheader ?? true; //if not provided then it will be true
     var storedata = body.storedata ?? global.storedata ?? true; //if not provided then it will be true
-    var storeheader = body.storeheader ?? global.storeheader ?? true; //if not provided then it will be true
     var expectedstatus = body.expectedstatus ?? global.expectedstatus ?? 200; //if not provided then it will be 200
     var ignoreerrors = body.ignoreerrors ?? global.ignoreerrors ?? false;
     //Now after this the only thing remains is the Condition part whihc will deal will all the conditions that is to be followed
+    var condition = conditionparser(body.condition ?? null, body.conditionavailble ?? false);
+    if (condition[0] == 0) {
+        return [0, {
+            "message": condition[1],
+            "paramters": {
+                "condition": body.condition,
+                "conditionavailble": body.conditionavailble
+            }
+        }, condition[2]];
+    }
+    var conditionavailable = condition[0] == -1 ? false : true; //measn the condition is not availbe
+    //Now lets join all the pieces together now
 
-
-
-};
-
-
-const pasrselink = async (link, endpoint, endpointavailble, globallink = null) => {
+    var dataobject = {
+        "link": link[0],
+        "method": method,
+        "headers": headers,
+        "data": data,
+        "storeheader": storeheader,
+        "storedata": storedata,
+        "expectedstatus": expectedstatus,
+        "ignoreerrors": ignoreerrors,
+        "condition": condition[0],
+        "conditionavailable": conditionavailable,
+        "fileavailable": fileavailable,
+        "filedata": fileddata[0]
+    }
+    return [1, dataobject,200];
+}
+const pasrselink = async (link, endpoint, endpointavailble, previouslink = null) => {
     //This is a simple future proof function 
     var linktosend = null;
     var message = "";
@@ -155,7 +177,7 @@ const parsedata = (data, toremove = [-2], datatostore = []) => {
 }
 
 const filedataparser = async (data, fileavailable, file) => {
-    var filedata ={};
+    var filedata = {};
     var message = "";
     var statuscode = 0;
     if (fileavailable == false && data == undefined && file == undefined) {
@@ -168,7 +190,7 @@ const filedataparser = async (data, fileavailable, file) => {
     for (const key in data) {
         //Now lets check if the file is valid or not
         //lets ignore the file type for now , as we can check it later on the server side
-        var filePaths = data[key].value??[]; // Assuming the first value is the file path
+        var filePaths = data[key].value ?? []; // Assuming the first value is the file path
         //lets normalise the file path to arrays
         filePaths = Array.isArray(filePaths) ? filePaths : [filePaths];
         for (const filePath of filePaths) {
@@ -226,9 +248,172 @@ const filedataparser = async (data, fileavailable, file) => {
 
 
 }
+const conditionparser = (condition, conditionavailable) => {
+    if (condition == null && conditionavailable == false) {
+        return [-1];
+    }
+    else if (condition == null && conditionavailable == true) {
+        return [0, `Condition is not provided even though the conditionavailable is set to true 
+            Please provide a valid object or set the conditionavailable to false `, 400];
+    }
+    //Now lets check if condtion is object or not
+    if (typeof condition !== "object" || Array.isArray(condition)) {
+        return [0, "Condition is not a valid object \nPlease provide a valid object", 400];
+    }
+    const validKeys = {
+        "if": 0,
+        "elseif": 1,
+    }
+    //If the keys are not valid then it is else
+    //the idea is to send a list [if,elseif,else] so , i can do a loop around this list and see if the condition matches or not
+    var flag = false; //This will make sure to only have one else condition and if we have more than that then we will just leave 
+
+
+    //hard coded this cause only 3 conditions are thier
+    const totalconditions = {
+        if: [],
+        elseif: [],
+        else: []
+    };
+    // 0 is if  1 is else-if and 2 is else 
+    for (const key in condition) {
+        var conditionkey = key.toLowerCase();
+        //Now lets do the validation of this keys
+
+        if (!validKeys.hasOwnProperty(conditionkey) && flag == true) {
+            return [0, "Only one else condition is allowed \nPlease provide a valid object or use else-if condition", 400];
+            //So no two invalid else or some random key is placed
+        } else if (!validKeys.hasOwnProperty(conditionkey) && flag == false) {
+            flag = true; //That means we have a else condition
+        }
+        var currentdata = condition[key];
+        if (typeof currentdata !== "object" || Array.isArray(currentdata)) {
+            return [0, `Condition for key ${key} is not a valid object \nPlease provide a valid object
+                        The valid keys are ${Object.keys(validKeys).join(", ")}
+                        The Given data is ${JSON.stringify(currentdata)}
+                        Please provide a valid object
+                `, 400];
+        }
+        var objectotsend = validatecondition(currentdata);
+        if (objectotsend[0] == 0) {
+            return objectotsend;
+        } else if (objectotsend[0] == -1) {
+            //measn lets just skip this 
+            continue;
+        }
+        if (!validKeys.hasOwnProperty(conditionkey)) {
+            conditionkey = "else"; //That means we have a else condition so lets just set it to else
+        }
+        totalconditions[conditionkey].push(objectotsend[1]);
 
 
 
+    }
+    if (Object.values(totalconditions).every(arr => !arr.length)) {
+        if (conditionavailable == true) {
+            return [0, `Condition is not provided even though the condidtion available is set to true 
+                Please provide a valid object or set the conditionavailable to false`, 400];
+
+        }
+        else {
+            ///Nothing lets just leave this now
+        }
+
+    }
+
+    return [1, totalconditions];
+
+}
+
+
+//This function will validate all the condition of individaul condition
+const validatecondition = (condition) => {
+    if (condition == null) {
+        return [-1]; //measn we have no condition so lets just skip this 
+    }
+
+    var { status, raiseerror, message, header, body, nextdata, overwritenextdata } = condition || null;
+    //Now we can actual do something to save the space like many time uses send if and nothing is attached to it
+    //We can just elimate that here complety
+    const types = {
+        message: "string",
+        raiseerror: "boolean",
+        header: "object",
+        body: "object",
+        nextdata: "object",
+        overwritenextdata: "boolean"
+    };
+
+    var objtosend = {};
+    if (status !== undefined) {
+        var individualstatus = Array.isArray(status) ? status : [status];
+        //just for the  normaliation lets conevert that into a array
+        for (const key of individualstatus) {
+            const stat = Number(key);
+            if (!Number.isFinite(stat) || stat < 100 || stat > 599) {
+                return [0, `Status code is not valid \nPlease provide a valid status code between 100 and 599
+                    The Given status code is ${stat} 
+                    Please provide a valid status code
+            `, 400];
+            } else if (typeof stat !== "number") {
+                return [0, `Status code is not valid \nPlease provide a valid status code between 100 and 599
+                    The Given status code is ${stat}
+                    Please provide a valid status code
+            `, 400];
+            } else {
+                //No need to do anything as all the status codes are valid
+            }
+        }
+        objtosend.status = individualstatus;
+        objtosend.statusavailable = true;
+    } else {
+        //Tricky part so lets return it completly then 
+        return [-1]
+
+    }
+    //Now  lets check the rasieerror and message
+    //This will validae all the keys in here
+    for (const [key, type] of Object.entries(types)) {
+        const value = condition[key];
+
+        if (value !== undefined && typeof value !== type) {
+            return [0, `The ${key} should be a ${type} \nPlease provide a valid ${type} The Given ${key} is ${key}
+                 Please provide a valid ${type}`, 400];
+        }
+        const str = `${key}available`;
+        objtosend[key] = value !== undefined;
+        objtosend[str] = value !== undefined;
+    }
+    return [1, objtosend];
+}
+/*
+"if":{
+"status":[200] the list of conditions
+"rasieerror":false //This will rasie a error or a checkpoint data for you
+"message":"" //this is the message that is to be sent to you if the condition is met
+//Can be used to stream the data to the user to see the progress
+"header":{
+"auth":"bearer {{header.auth}}"
+//here the system will automatically add the auth to the header
+"toremoveheaders":[] 
+//This will remove all the heders in the list ,
+//if this is set to -1 then all the heders will be removed except the presnt header from the data 
+}
+"body":{
+"somekey":"{{body.somekey}}"
+"toremovedata":[] //This will remove all the body in the list ,
+ 
+ 
+}
+"nextdata":{} You can also set the data in the present request for the next request
+"overwritenextdata":true //This is used to overwrite the data in the next request if this is set to false then the data will be merged with the next request data
+}
+"else if":{
+//same above data
+ 
+}
+ 
+*/
 
 
 
