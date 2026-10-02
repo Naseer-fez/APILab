@@ -24,9 +24,12 @@ const payload = {
             storeheader: false,
             storedata: false,
             link: "http://localhost:3000",
-            endpoint: "/api/status",
+            endpoint: "/health",
             endpointavailable: true,
-            method: "GET",
+            method: "POST",
+            data: {
+                "message": "hello again"
+            },
             fileavailable: false,
             expectedstatus: 200,
             ignoreerros: false,
@@ -37,7 +40,7 @@ const payload = {
                     rasieerror: false,
                     message: "ok",
                     header: {},
-                    body: {}
+                    body: {"message":"ahhaha"}
                 }
             }
         }
