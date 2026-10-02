@@ -1,11 +1,12 @@
 import fs from "fs/promises";
 import path from "path";
-
+import { log } from "../utils/logger.js";
 
 const parsebody = async (body, file, global = {}, first = 1) => {
     //First lets Parse the link 
+    // console.log("Parsing body::::::::: ", body);
     var link = await pasrselink(body.link, body.endpoint, body.endpointavailble, global.link ?? null);
-
+    log(`Parsed link: ${JSON.stringify(link)}`, 'info', 'sequencetest.log');
     if (link[0] == null) {
         return [0, {
             "message": link[1],
@@ -65,16 +66,19 @@ const parsebody = async (body, file, global = {}, first = 1) => {
         "fileavailable": fileavailable,
         "filedata": fileddata[0]
     }
-    return [1, dataobject,200];
+    // console.log("Parsed dataobject is ", dataobject);
+
+    return [1, dataobject, 200];
 }
 const pasrselink = async (link, endpoint, endpointavailble, previouslink = null) => {
     //This is a simple future proof function 
+    // console.log("Parsing link::::::::: ", { link, endpoint, endpointavailble, previouslink });
     var linktosend = null;
     var message = "";
     var statuscode = 0;
     if (link == null) {
         //So lets now check he previous link 
-        if (previouslink == null) {
+        if (false) {
             //that measn we have no link so , lets Return that 
             linktosend = null;
             message = `
@@ -258,7 +262,7 @@ const conditionparser = (condition, conditionavailable) => {
     }
     //Now lets check if condtion is object or not
     if (typeof condition !== "object" || Array.isArray(condition)) {
-        return [0, "Condition is not a valid object \nPlease provide a valid object", 400];
+        return [0, "Condition is not a valid object Please provide a valid object", 400];
     }
     const validKeys = {
         "if": 0,
@@ -281,14 +285,14 @@ const conditionparser = (condition, conditionavailable) => {
         //Now lets do the validation of this keys
 
         if (!validKeys.hasOwnProperty(conditionkey) && flag == true) {
-            return [0, "Only one else condition is allowed \nPlease provide a valid object or use else-if condition", 400];
+            return [0, "Only one else condition is allowed Please provide a valid object or use else-if condition", 400];
             //So no two invalid else or some random key is placed
         } else if (!validKeys.hasOwnProperty(conditionkey) && flag == false) {
             flag = true; //That means we have a else condition
         }
         var currentdata = condition[key];
         if (typeof currentdata !== "object" || Array.isArray(currentdata)) {
-            return [0, `Condition for key ${key} is not a valid object \nPlease provide a valid object
+            return [0, `Condition for key ${key} is not a valid object Please provide a valid object
                         The valid keys are ${Object.keys(validKeys).join(", ")}
                         The Given data is ${JSON.stringify(currentdata)}
                         Please provide a valid object
@@ -326,8 +330,10 @@ const conditionparser = (condition, conditionavailable) => {
 }
 
 
+
 //This function will validate all the condition of individaul condition
 const validatecondition = (condition) => {
+    console.log("Validating condition ", condition);
     if (condition == null) {
         return [-1]; //measn we have no condition so lets just skip this 
     }
@@ -337,12 +343,14 @@ const validatecondition = (condition) => {
     //We can just elimate that here complety
     const types = {
         message: "string",
+        condition: "string",
         raiseerror: "boolean",
         header: "object",
         body: "object",
         nextdata: "object",
         overwritenextdata: "boolean"
     };
+
 
     var objtosend = {};
     if (status !== undefined) {
@@ -351,12 +359,12 @@ const validatecondition = (condition) => {
         for (const key of individualstatus) {
             const stat = Number(key);
             if (!Number.isFinite(stat) || stat < 100 || stat > 599) {
-                return [0, `Status code is not valid \nPlease provide a valid status code between 100 and 599
+                return [0, `Status code is not valid Please provide a valid status code between 100 and 599
                     The Given status code is ${stat} 
                     Please provide a valid status code
             `, 400];
             } else if (typeof stat !== "number") {
-                return [0, `Status code is not valid \nPlease provide a valid status code between 100 and 599
+                return [0, `Status code is not valid Please provide a valid status code between 100 and 599
                     The Given status code is ${stat}
                     Please provide a valid status code
             `, 400];
@@ -377,15 +385,71 @@ const validatecondition = (condition) => {
         const value = condition[key];
 
         if (value !== undefined && typeof value !== type) {
-            return [0, `The ${key} should be a ${type} \nPlease provide a valid ${type} The Given ${key} is ${key}
+            return [0, `The ${key} should be a ${type} Please provide a valid ${type} The Given ${key} is ${key}
                  Please provide a valid ${type}`, 400];
         }
         const str = `${key}available`;
         objtosend[key] = value !== undefined;
         objtosend[str] = value !== undefined;
     }
+    const bracketvalidation = ["nextdata", "header", "condition"]
+    //Lets verify the brackets now
+
+    for (const key of bracketvalidation) {
+        if (objtosend[`${key}available`]) {
+            var result = validatebrackets(objtosend[key]); //This will validate 
+            if (result[0] == 0) {
+                return result;
+            }
+            objtosend[key] = result[1];
+        }
+        //Now validate them 
+
+    }
+
     return [1, objtosend];
 }
+const validatebrackets = (data) => {
+    const openbrackets = "{{";
+    const closebrackets = "}}";
+    //first lets check if the data is an object or not
+    //so that we can traver accordingly
+    if (typeof data === "string") {
+        const result = 1 ? data.includes(openbrackets) && data.includes(closebrackets) : false;
+        if (!result) {
+            return [0, `The value should contain the brackets {{}}
+                     Please provide a valid value The Given value is ${data}
+                Please provide a valid value`, 400];
+        }
+        return [1, data];
+    }
+    if (typeof data === "number") {
+        return [1, data];
+    }
+    const values = Array.isArray(data)
+        ? data
+        : (typeof data === "object" && data !== null)
+            ? Object.values(data)
+            : null;
+    for (const key of values) {
+        const value = data[key];
+        //Now we validae the value 
+        if (typeof value === "string") {
+            if (value.includes(openbrackets) && value.includes(closebrackets)) {
+                //continue 
+            } else {
+                return [0, `The value for key ${key} should contain the brackets {{}}
+                         Please provide a valid value The Given value is ${value}
+                    Please provide a valid value`, 400];
+            }
+
+        }
+
+
+    }
+    return [1, data];
+};
+
 /*
 "if":{
 "status":[200] the list of conditions

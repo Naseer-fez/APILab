@@ -97,7 +97,11 @@ method:"POST", // The deafult method is POST and it automatically converts the m
 condition:{
 //The refrence data is to be placed in {{}} Double curly braces.
 
+
 "if":{
+"condition":"{{response.status}} == 200", //This is the condition that is to be checked if the condition is met then the data will be sent to the next request
+//This condition will be parsed and then will be checked 
+***Note if the condition is not availabe then the status will be checked for the condition
 "status":[200] the list of conditions
 "rasieerror":false //This will rasie a error or a checkpoint data for you
 "message":"" //this is the message that is to be sent to you if the condition is met
