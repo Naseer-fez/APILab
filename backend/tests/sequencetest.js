@@ -71,6 +71,6 @@ async function runSimulation() {
 while (true) {
     runSimulation();
     //sleep timeeeee 
-    await setTimeout(5000);
+    await setTimeout(1000);
 
 }

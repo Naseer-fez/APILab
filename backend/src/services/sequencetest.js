@@ -2,11 +2,23 @@ import fs from "fs/promises";
 import path from "path";
 import { log } from "../utils/logger.js";
 
+//so many vars need to fix this later on 
 const parsebody = async (body, file, global = {}, first = false) => {
     //First lets Parse the link 
     // console.log("Parsing body::::::::: ", body);
+    // console.log("Parsing body::::::::: ", { body, file, global, first });
     var link = await pasrselink(body.link, body.endpoint, body.endpointavailable, global.link ?? null);
-    log(`Parsed link: ${JSON.stringify(link)}`, 'info', 'sequencetest.log');
+    if (link[0] == null) {
+        return [0, {
+            "message": link[1],
+            "paramters": {
+                "link": body.link,
+                "endpoint": body.endpoint,
+                "endpointavailable": body.endpointavailable
+            }
+        }, link[2]]
+    }
+    // log(`Parsed link: ${JSON.stringify(link)}`, 'info', 'sequencetest.log');
     if (link[0] == null) {
         return [0, {
             "message": link[1],
@@ -39,7 +51,7 @@ const parsebody = async (body, file, global = {}, first = false) => {
     var expectedstatus = body.expectedstatus ?? global.expectedstatus ?? 200; //if not provided then it will be 200
     var ignoreerrors = body.ignoreerrors ?? global.ignoreerrors ?? false;
     //Now after this the only thing remains is the Condition part whihc will deal will all the conditions that is to be followed
-    var condition = conditionparser(body.condition ?? null, body.conditionavailble ?? false);
+    var condition = conditionparser(body.conditions ?? null, body.conditionavailble ?? false);
     if (condition[0] == 0) {
         return [0, {
             "message": condition[1],
@@ -61,45 +73,38 @@ const parsebody = async (body, file, global = {}, first = false) => {
         "storedata": storedata,
         "expectedstatus": expectedstatus,
         "ignoreerrors": ignoreerrors,
-        "condition": condition[0],
+        "condition": condition[1],
         "conditionavailable": conditionavailable,
         "fileavailable": fileavailable,
-        "filedata": fileddata[0]
+        "filedata": fileddata[1]
     }
+    const requiredglobalkeys = ["link", "method", "headers", "data", "storeheader",
+        "storedata", "expectedstatus", "ignoreerrors", "condition",
+        "conditionavailable", "fileavailable", "filedata"];
     // console.log("Parsed dataobject is ", dataobject);
     if (first) {
         //This measn we also need to send the global data also 
         return [1,
-            [dataobject, {
-                method: method,
-                link: link[1],
-                headers: headers,
-                storeheader: storeheader,
-                storedata: storedata,
-                expectedstatus: expectedstatus,
-                ignoreerrors: ignoreerrors,
-                condition: condition[0],
-                conditionavailable: conditionavailable,
-                header: headers,
-                data: data,
-                fileavailable: fileavailable,
-            }]
+            [dataobject, Object.fromEntries(requiredglobalkeys.map(key => [key, dataobject[key]]))], 200
         ]
 
     }
 
     return [1, dataobject, 200];
 }
-const pasrselink = async (link, endpoint, endpointavailable, previouslink = null) => {
+const pasrselink = async (link, endpoint, endpointavailable, previouslink = 0) => {
     //This is a simple future proof function 
     // console.log("Parsing link::::::::: ", { link, endpoint, endpointavailable, previouslink });
-    var linktosend = null;
+    var linktosend = previouslink;
+
     var message = "";
     var statuscode = 0;
-    if (link == null) {
+    if (link === null) {
+
         //So lets now check he previous link 
-        if (previouslink == null && link == null) {
+        if (previouslink === null || previouslink === '') {
             //that measn we have no link so , lets Return that 
+
             linktosend = null;
             message = `
                 No link is provided For this request data 
@@ -109,10 +114,13 @@ const pasrselink = async (link, endpoint, endpointavailable, previouslink = null
 
 
         } else {
+            //measn previous link is availeb
             //that means we have a previous link  so lets check the endpoint now
             if (endpointavailable == true) {
+
                 //Now lets check the endpoint now
                 if (endpoint == null) {
+
                     //Now previous link is available , but the endpoint is not
                     //I can be strict and just avoid it , cause why wil anyone even do a sequence of that
                     message = `
@@ -122,6 +130,7 @@ const pasrselink = async (link, endpoint, endpointavailable, previouslink = null
                     `;
                     statuscode = 400;
                 } else {
+
                     //finnlay postive news
                     linktosend = combinelinks([previouslink, endpoint]);
                     // no need to send anything else now
@@ -137,6 +146,8 @@ const pasrselink = async (link, endpoint, endpointavailable, previouslink = null
         //link is provide so lets just check the endpoint now
         //lets just trow it then 
         linktosend = combinelinks([link, endpoint]);
+        // console.log("The linktosend is ", linktosend);
+
 
     }
     return [linktosend, message, statuscode];
@@ -144,7 +155,7 @@ const pasrselink = async (link, endpoint, endpointavailable, previouslink = null
 }
 
 //reduced the boiler plate code in this 
-const combinelinks = (links) => {
+const combinelinks = (links,) => {
     const validLinks = links.filter(link => link != null);
 
     if (validLinks.length === 0) {
@@ -347,13 +358,13 @@ const conditionparser = (condition, conditionavailable) => {
         }
 
     }
-
+    // console.log("The total conditions are ", totalconditions);
     return [1, totalconditions];
 
 }
 //This function will validate all the condition of individaul condition
 const validatecondition = (condition) => {
-    console.log("Validating condition ", condition);
+    // console.log("Validating condition ", condition);
     if (condition == null) {
         return [-1]; //measn we have no condition so lets just skip this 
     }
@@ -413,10 +424,12 @@ const validatecondition = (condition) => {
         objtosend[str] = value !== undefined;
     }
     const bracketvalidation = ["nextdata", "header", "condition"]
-    //Lets verify the brackets now
 
+    //Lets verify the brackets now
     for (const key of bracketvalidation) {
         if (objtosend[`${key}available`]) {
+
+
             var result = validatebrackets(objtosend[key]); //This will validate 
             if (result[0] == 0) {
                 return result;
@@ -426,46 +439,60 @@ const validatecondition = (condition) => {
         //Now validate them 
 
     }
-
+    // console.log("Validated condition is ", objtosend);
     return [1, objtosend];
 }
 const validatebrackets = (data) => {
-    const openbrackets = "{{";
-    const closebrackets = "}}";
-    //first lets check if the data is an object or not
-    //so that we can traver accordingly
-    if (typeof data !== "object" || Array.isArray(data)) {
-        return [0, `The data should be an object Please provide a valid object The Given data is ${data}
-        Please provide a valid object
-        ***The data is only allowed for a string value for now***
-        `, 400];
-    }
-    if (data == null || data == undefined || typeof data === "number" || typeof data === "boolean") {
+    const open = "{{", close = "}}";
+
+    if (data == null || typeof data === "number" || typeof data === "boolean")
         return [1, data];
-        //If it is number then it will be direclty compared to the statu code
-    }
-    if (typeof data !== "string") {
-        return [0,
-            `The Data shoudl be in String or a number format for the conditional check!
-            Please provide a valid data The Given data is ${data}`, 400]
 
-    }
-    //now lets see if the barackets are open and cloosed propely or not
-    var opencount = 0;//if it zero again after toogel then it is valid 
-    if (data.includes(openbrackets)) opencount = !opencount;
-    if (data.includes(closebrackets)) opencount = !opencount;
-    if (opencount) {
-        return [0,
-            `The brackets are not propely closed please provide a valid object The Given data is ${data}
-    Please provide a valid object
-    ***The data is only allowed for a string value for now***
-    `, 400];
-    }
-    return [1, data];
+    if (typeof data === "string") {
+        let pos = 0;
+        while (pos < data.length) {
+            const oi = data.indexOf(open, pos);
+            const ci = data.indexOf(close, pos);
 
+            if (oi === -1 && ci === -1) break;
 
+            if (ci !== -1 && (oi === -1 || ci < oi))
+                return [0, `Invalid brackets: "}}" found without "{{". Given data: ${data}`, 400];
+
+            const match = data.indexOf(close, oi + 2);
+            if (match === -1)
+                return [0, `Invalid brackets: "{{" is not closed with "}}". Given data: ${data}`, 400];
+
+            if (data.indexOf(open, oi + 2) !== -1 &&
+                data.indexOf(open, oi + 2) < match)
+                return [0, `Invalid nested brackets are not allowed. Given data: ${data}`, 400];
+
+            if (!data.slice(oi + 2, match).trim())
+                return [0, `Invalid empty "{{}}" expression. Given data: ${data}`, 400];
+
+            pos = match + 2;
+        }
+        return [1, data];
+    }
+
+    if (Array.isArray(data)) {
+        for (let i = 0; i < data.length; i++) {
+            const result = validatebrackets(data[i]);
+            if (result[0] === 0) return [0, `Invalid value at array index ${i}: ${result[1]}`, 400];
+        }
+        return [1, data];
+    }
+
+    if (typeof data === "object") {
+        for (const [key, value] of Object.entries(data)) {
+            const result = validatebrackets(value);
+            if (result[0] === 0) return [0, `Invalid value at "${key}": ${result[1]}`, 400];
+        }
+        return [1, data];
+    }
+
+    return [0, `Unsupported data type: ${typeof data}`, 400];
 };
-
 /*
 "if":{
 "status":[200] the list of conditions
