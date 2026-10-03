@@ -2,10 +2,10 @@ import fs from "fs/promises";
 import path from "path";
 import { log } from "../utils/logger.js";
 
-const parsebody = async (body, file, global = {}, first = 1) => {
+const parsebody = async (body, file, global = {}, first = false) => {
     //First lets Parse the link 
     // console.log("Parsing body::::::::: ", body);
-    var link = await pasrselink(body.link, body.endpoint, body.endpointavailble, global.link ?? null);
+    var link = await pasrselink(body.link, body.endpoint, body.endpointavailable, global.link ?? null);
     log(`Parsed link: ${JSON.stringify(link)}`, 'info', 'sequencetest.log');
     if (link[0] == null) {
         return [0, {
@@ -13,13 +13,13 @@ const parsebody = async (body, file, global = {}, first = 1) => {
             "paramters": {
                 "link": body.link,
                 "endpoint": body.endpoint,
-                "endpointavailble": body.endpointavailble
+                "endpointavailable": body.endpointavailable
             },
 
         }, link[2]]
     }
     //Now Lets do for files. Better to do this first
-    var fileddata = await filedataparser(body.filedata, body.fileavailable, file);
+    var fileddata = await filedataparser(body.filedata, body.fileavailable, file, first);
     if (fileddata[0] == 0) {
         return [0, {
             "message": fileddata[1],
@@ -67,18 +67,38 @@ const parsebody = async (body, file, global = {}, first = 1) => {
         "filedata": fileddata[0]
     }
     // console.log("Parsed dataobject is ", dataobject);
+    if (first) {
+        //This measn we also need to send the global data also 
+        return [1,
+            [dataobject, {
+                method: method,
+                link: link[1],
+                headers: headers,
+                storeheader: storeheader,
+                storedata: storedata,
+                expectedstatus: expectedstatus,
+                ignoreerrors: ignoreerrors,
+                condition: condition[0],
+                conditionavailable: conditionavailable,
+                header: headers,
+                data: data,
+                fileavailable: fileavailable,
+            }]
+        ]
+
+    }
 
     return [1, dataobject, 200];
 }
-const pasrselink = async (link, endpoint, endpointavailble, previouslink = null) => {
+const pasrselink = async (link, endpoint, endpointavailable, previouslink = null) => {
     //This is a simple future proof function 
-    // console.log("Parsing link::::::::: ", { link, endpoint, endpointavailble, previouslink });
+    // console.log("Parsing link::::::::: ", { link, endpoint, endpointavailable, previouslink });
     var linktosend = null;
     var message = "";
     var statuscode = 0;
     if (link == null) {
         //So lets now check he previous link 
-        if (false) {
+        if (previouslink == null && link == null) {
             //that measn we have no link so , lets Return that 
             linktosend = null;
             message = `
@@ -90,13 +110,13 @@ const pasrselink = async (link, endpoint, endpointavailble, previouslink = null)
 
         } else {
             //that means we have a previous link  so lets check the endpoint now
-            if (endpointavailble == true) {
+            if (endpointavailable == true) {
                 //Now lets check the endpoint now
                 if (endpoint == null) {
                     //Now previous link is available , but the endpoint is not
                     //I can be strict and just avoid it , cause why wil anyone even do a sequence of that
                     message = `
-                    The endpoint is not Provided for this request data even though the endpointavailble is set to true
+                    The endpoint is not Provided for this request data even though the endpointavailable is set to true
                     Please verify the endpoint is provided propelry.
                     The previous link is available but is avoided due to the endpoint not being provided
                     `;
@@ -180,11 +200,14 @@ const parsedata = (data, toremove = [-2], datatostore = []) => {
 
 }
 
-const filedataparser = async (data, fileavailable, file) => {
+const filedataparser = async (data, fileavailable, file, first = false) => {
     var filedata = {};
     var message = "";
     var statuscode = 0;
+
     if (fileavailable == false && data == undefined && file == undefined) {
+
+
         return [-1, message, statuscode]; //measns no for this 
     }
     data = data ?? {};
@@ -328,9 +351,6 @@ const conditionparser = (condition, conditionavailable) => {
     return [1, totalconditions];
 
 }
-
-
-
 //This function will validate all the condition of individaul condition
 const validatecondition = (condition) => {
     console.log("Validating condition ", condition);
@@ -389,7 +409,7 @@ const validatecondition = (condition) => {
                  Please provide a valid ${type}`, 400];
         }
         const str = `${key}available`;
-        objtosend[key] = value !== undefined;
+        objtosend[key] = value;
         objtosend[str] = value !== undefined;
     }
     const bracketvalidation = ["nextdata", "header", "condition"]
@@ -414,40 +434,36 @@ const validatebrackets = (data) => {
     const closebrackets = "}}";
     //first lets check if the data is an object or not
     //so that we can traver accordingly
-    if (typeof data === "string") {
-        const result = 1 ? data.includes(openbrackets) && data.includes(closebrackets) : false;
-        if (!result) {
-            return [0, `The value should contain the brackets {{}}
-                     Please provide a valid value The Given value is ${data}
-                Please provide a valid value`, 400];
-        }
-        return [1, data];
+    if (typeof data !== "object" || Array.isArray(data)) {
+        return [0, `The data should be an object Please provide a valid object The Given data is ${data}
+        Please provide a valid object
+        ***The data is only allowed for a string value for now***
+        `, 400];
     }
-    if (typeof data === "number") {
+    if (data == null || data == undefined || typeof data === "number" || typeof data === "boolean") {
         return [1, data];
+        //If it is number then it will be direclty compared to the statu code
     }
-    const values = Array.isArray(data)
-        ? data
-        : (typeof data === "object" && data !== null)
-            ? Object.values(data)
-            : null;
-    for (const key of values) {
-        const value = data[key];
-        //Now we validae the value 
-        if (typeof value === "string") {
-            if (value.includes(openbrackets) && value.includes(closebrackets)) {
-                //continue 
-            } else {
-                return [0, `The value for key ${key} should contain the brackets {{}}
-                         Please provide a valid value The Given value is ${value}
-                    Please provide a valid value`, 400];
-            }
+    if (typeof data !== "string") {
+        return [0,
+            `The Data shoudl be in String or a number format for the conditional check!
+            Please provide a valid data The Given data is ${data}`, 400]
 
-        }
-
-
+    }
+    //now lets see if the barackets are open and cloosed propely or not
+    var opencount = 0;//if it zero again after toogel then it is valid 
+    if (data.includes(openbrackets)) opencount = !opencount;
+    if (data.includes(closebrackets)) opencount = !opencount;
+    if (opencount) {
+        return [0,
+            `The brackets are not propely closed please provide a valid object The Given data is ${data}
+    Please provide a valid object
+    ***The data is only allowed for a string value for now***
+    `, 400];
     }
     return [1, data];
+
+
 };
 
 /*

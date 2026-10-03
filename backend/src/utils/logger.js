@@ -19,7 +19,9 @@ const log = async (message, level = "info", filename = null) => {
     const currenttime = new Date();
     const formattedTime = currenttime.toISOString().slice(0, 19).replace('T', ' ');
     if (typeof message === 'object') {
-        message = JSON.stringify(message, null, 2); //Pretty print the object
+        // message = JSON.stringify(message, null, 2); //Pretty print the object
+        //Each key in one line
+        message=Object.entries(message).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join('\n');
     }
 
     const logMessage = `[${formattedTime}] [${level.toUpperCase()}] ${message}\n`;

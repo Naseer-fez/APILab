@@ -16,12 +16,18 @@ const sequencetestController = async (req, res) => {
     // console.log("The req body:",req.body.request)
     const reqbody = Array.isArray(req.body.request) ? req.body.request : [req.body.request];
     //We will check if the body is an array or not, if not we will make it an array
-    for (var reqnum = 0; reqnum < reqbody.length; reqnum++) {
+    //Lets do onething only send one req for this and only get the global data for this 
+    const globaldata = await parsebody(reqbody[0], req.file, first = true);
+    if (globaldata[0] === 0) {
+        return res.status(400).json({ message: globaldata[2] });
+    }
+    totalrequestsdata.push(globaldata[1][1]); //We will push the parsed body to the totalrequestsdata array
+    globaldata=globaldata[1][0]; //We will get the global data from the first request
+    for (var reqnum = 1; reqnum < reqbody.length; reqnum++) {
         const request = reqbody[reqnum];
+        log(`Processing request number ${reqnum + 1}: ${JSON.stringify(request)}`, 'info', 'sequencetest.log');
 
-        // log(`Processing request: ${JSON.stringify(request)}`, 'info', 'sequencetest.log');
-        // console.log("Before parsing the body for request number ", reqnum + 1, ":", request);
-        const body = await parsebody(request, req.file);
+        const body = await parsebody(request, req.file,globaldata);
         // console.log("After parsing the body for request number ", reqnum + 1, ":", body);
         // console.log("Parsed body is ", body);
 
@@ -36,7 +42,7 @@ const sequencetestController = async (req, res) => {
     const finalresult = await handelrequests(totalrequestsdata, ws); //We will send the parsed body to the handelrequests function
     return res.status(finalresult[2]).json(finalresult[1]); //We can diraclty send the response we will validate that in the function itself    
 }
-const sendrequest = async ({ link, method, headers, data = {}, file = null, fileavailabe = false }) => {
+const sendrequest = async ({ link, method, headers, data = {}, filedata = null, fileavailabe = false }) => {
     //This is the basic function which will be used to send the request to the other server
     //casue we have parsed everything we can direcly perfrom the tasks
     // console.log("Sending request to link:", link, "with method:", method, "and headers:", headers, "and data:", data, "and file:", file, "and fileavailabe:", fileavailabe);
@@ -73,7 +79,7 @@ const sendrequest = async ({ link, method, headers, data = {}, file = null, file
     }, result.status];
 
 }
-const sendfile = async (link, method, headers, file) => {
+const sendfile = async (link, method, headers, filedata) => {
     const stream = fs.createReadStream(file.path);
     try {
         const response = await fetch(link, {
@@ -98,6 +104,7 @@ const handelrequests = async (body, websocket = null) => {
     //First pick the data and send it Cause this is a list we can easily iterate over that
     // a loop is good but the best idea will be a recursive function that will send the '
     // request and check the condition and then move forward so that we can eaisly chnage the data
+    log(`Handling requests with body: ${JSON.stringify(body)}`, 'info', 'sequencetest.log');
     const globalresponse = {
         response: [],
         variables: {}
