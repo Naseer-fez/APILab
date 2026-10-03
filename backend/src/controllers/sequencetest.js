@@ -23,8 +23,8 @@ const sequencetestController = async (req, res) => {
     if (globaldata[0] === 0) {
         return res.status(400).json({ message: globaldata[2] });
     }
-    totalrequestsdata.push(globaldata[1][1]); //We will push the parsed body to the totalrequestsdata array
-    globaldata = globaldata[1][0]; //We will get the global data from the first request
+    totalrequestsdata.push(globaldata[1][0]); //We will push the parsed body to the totalrequestsdata array
+    globaldata = globaldata[1][1]; //We will get the global data from the first request
     for (var reqnum = 1; reqnum < reqbody.length; reqnum++) {
         const request = reqbody[reqnum];
         // log(`Processing request number ${reqnum + 1}: ${JSON.stringify(request)}`, 'info', 'sequencetest.log');
@@ -44,14 +44,14 @@ const sequencetestController = async (req, res) => {
     const finalresult = await handelrequests(totalrequestsdata, globaldata, ws); //We will send the parsed body to the handelrequests function
     return res.status(finalresult[2]).json(finalresult[1]); //We can diraclty send the response we will validate that in the function itself    
 }
-const sendrequest = async ({ link, method, headers, data = {}, filedata = null, fileavailabe = false }) => {
+const sendrequest = async ({ link, method, headers, data = {}, filedata = null, fileavailable = false }) => {
     //This is the basic function which will be used to send the request to the other server
     //casue we have parsed everything we can direcly perfrom the tasks
-    // console.log("Sending request to link:", link, "with method:", method, "and headers:", headers, "and data:", data, "and file:", file, "and fileavailabe:", fileavailabe);
-    // log(`Sending request to link: ${link} with method: ${method} and headers: ${JSON.stringify(headers)} and data: ${JSON.stringify(data)} and file available: ${fileavailabe}`, 'info', 'sequencetest.log');
+    // console.log("Sending request to link:", link, "with method:", method, "and headers:", headers, "and data:", data, "and file:", file, "and fileavailable:", fileavailable);
+    // log(`Sending request to link: ${link} with method: ${method} and headers: ${JSON.stringify(headers)} and data: ${JSON.stringify(data)} and file available: ${fileavailable}`, 'info', 'sequencetest.log');
     //    log("The link is",link)
-    if (fileavailabe) {
-        return await sendfile(link, method, headers, file);
+    if (fileavailable) {
+        return await sendfile(link, method, headers, filedata);
     } //Simple abstraction
     link = (() => {
         if (method === 'GET') {
@@ -78,14 +78,20 @@ const sendrequest = async ({ link, method, headers, data = {}, filedata = null, 
         });
     }
     console.log("The data sent is ", data);
+    let responseData;
+    try {
+        responseData = await result.json();
+    } catch {
+        responseData = await result.text();
+    }
     return [result.ok ? 1 : 0, {
-        status: result.status, data: await result.json(),
+        status: result.status, data: responseData,
         headers: Object.fromEntries(result.headers.entries())
     }, result.status];
 
 }
 const sendfile = async (link, method, headers, filedata) => {
-    const stream = fs.createReadStream(file.path);
+    const stream = fs.createReadStream(filedata.path);
     try {
         const response = await fetch(link, {
             method: method,
@@ -146,7 +152,7 @@ const handelrequests = async (body, globaldata, websocket = null) => {
             //This is like a checkpoint to rasie
             const message = conditionresult[1].message;
             const result = handelcheckpoint(message, [globalresponse, finalresult, originalrequest], websocket);
-            if (res[0] === 0) {
+            if (result[0] === 0) {
                 //Now should  i try to hold the users for a checkpoint miss big thinking here
 
             }
@@ -197,6 +203,7 @@ const resolvedata = async (request, previousrequest = {}) => {
      we can easily use the previous request to get the data
     so in this fucntion i will get the current data and then the previous data 
     I need to look in the previous data and then reqite the current data*/
+   const previousData = previousrequest;
    const resolveValue = (value) => {
 
         // Handle arrays

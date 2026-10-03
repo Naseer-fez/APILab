@@ -176,9 +176,9 @@ const combinelinks = (links,) => {
     return completeLink;
 };
 
-const methodparser = (method) => {
+const methodparser = (method, globalMethod) => {
     const validMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"];
-
+    method = method ?? globalMethod ?? "POST";
     return validMethods.includes(method.toUpperCase()) ? method.toUpperCase() : "POST";
     //lets just send POST for giving the benfit of doubt to the user.
 
@@ -280,9 +280,9 @@ const filedataparser = async (data, fileavailable, file, first = false) => {
         //that means no file is found so lets just return the error
         message = "No file is found in the provided file paths or the uploaded files";
         statuscode = 400;
-
+        return [0, message, statuscode];
     }
-    return [filedata, message, statuscode];
+    return [1, filedata, statuscode];
 
 
 }
