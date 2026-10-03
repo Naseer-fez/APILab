@@ -5,7 +5,7 @@ import path from 'path';
 
 const Enablelogging = true; //This is the global variable that will enable or disable logging
 
-const log = async (message, level = "info", filename = null) => {
+const log = async (messageinfo, message, level = "INFO", filename = null) => {
     if (!Enablelogging) return;
     if (filename == null) {
         //Lets get the name of the file that called this function
@@ -18,13 +18,15 @@ const log = async (message, level = "info", filename = null) => {
 
     const currenttime = new Date();
     const formattedTime = currenttime.toISOString().slice(0, 19).replace('T', ' ');
-    if (typeof message === 'object') {
-        // message = JSON.stringify(message, null, 2); //Pretty print the object
-        //Each key in one line
-        message=Object.entries(message).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join('\n');
+    if (typeof message === 'object' && !Array.isArray(message)) {
+        message = formatobject(message);
     }
+    else if (Array.isArray(message)) {
+        message = formatarray(message);
+    }
+    var logMessage = "______________________________________________________________\n";
+    logMessage += `[${formattedTime}] [${level}] ${messageinfo}:${message}\n`;
 
-    const logMessage = `[${formattedTime}] [${level.toUpperCase()}] ${message}\n`;
     const logFilePath = path.join(process.cwd(), 'logs', filename);
     try {
         //First lets create the folder
@@ -37,6 +39,35 @@ const log = async (message, level = "info", filename = null) => {
     }
 
 
+}
+const formatarray = (arr, msg = "") => {
+    if (!Array.isArray(arr)) return msg
+    for (let i = 0; i < arr.length; i++) {
+        if (typeof arr[i] === 'object' && !Array.isArray(arr[i])) {
+            msg += formatobject(arr[i], msg);
+        }
+        else if (Array.isArray(arr[i])) {
+            msg += formatarray(arr[i], msg);
+        }
+        else {
+            msg += arr[i] + "\t";
+        }
+    }
+    return msg;
+}
+
+const formatobject = (obj, msg = "") => {
+    if (typeof obj !== 'object' || obj === null) return msg;
+    for (const key in obj) {
+        if (typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+            msg += `${key}: { ${formatobject(obj[key], msg)} } ` + '\n';
+        }
+        else {
+            msg += `${key}: ${obj[key]} ` + '\n';
+        }
+    }
+
+    return msg;
 }
 
 export { log };
