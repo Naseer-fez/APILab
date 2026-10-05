@@ -1,7 +1,9 @@
-import { parsebody } from '../services/sequencetest.js';
+import { parsebody, parsedata, toogledata } from '../services/sequencetest.js';
 import WebSocket from 'ws';
 import fs from 'fs';
 import { log } from '../utils/logger.js';
+
+
 
 
 const sequencetestController = async (req, res) => {
@@ -25,10 +27,12 @@ const sequencetestController = async (req, res) => {
     }
     totalrequestsdata.push(globaldata[1][0]); //We will push the parsed body to the totalrequestsdata array
     globaldata = globaldata[1][1]; //We will get the global data from the first request
+    // console.log("The First request is :", totalrequestsdata[0]);
     for (var reqnum = 1; reqnum < reqbody.length; reqnum++) {
         const request = reqbody[reqnum];
         // log(`Processing request number ${reqnum + 1}: ${JSON.stringify(request)}`, 'info', 'sequencetest.log');
-        const body = await parsebody(request, req.file, globaldata, false);
+        const nextrequest = totalrequestsdata[reqnum - 1]; //We will get the previous request data to resolve the current request
+        const body = await parsebody(request, req.file, globaldata, false, nextrequest);
         // console.log("After parsing the body for request number ", reqnum + 1, ":", body);
         // console.log("Parsed body is ", body);
 
@@ -37,9 +41,13 @@ const sequencetestController = async (req, res) => {
             return res.status(400).json({ message: body[1] });
         }
         totalrequestsdata.push(body[1]); //We will push the parsed body to the totalrequestsdata array
+        // console.log("Before toggling the data for request number ", reqnum, ":",to  previousrequest = {};talrequestsdata[reqnum-1]);
+        totalrequestsdata[reqnum - 1] = toogledata(totalrequestsdata[reqnum - 1], body[1]); //We will toggle the data for the previous request based on the current request
+        // console.log("After toggling the data for request number ", reqnum, ":", totalrequestsdata[reqnum-1]);
         //Each push reprsets a single request that we will send to the handelrequests function
     }
     const ws = req.ws; //will work on this later
+    // console.log("The total requests data is :", totalrequestsdata);
     //Body has been parsed and validated, now we can send the response to the client
     const finalresult = await handelrequests(totalrequestsdata, globaldata, ws); //We will send the parsed body to the handelrequests function
     return res.status(finalresult[2]).json(finalresult[1]); //We can diraclty send the response we will validate that in the function itself    
@@ -77,7 +85,7 @@ const sendrequest = async ({ link, method, headers, data = {}, filedata = null, 
             body: JSON.stringify(data)
         });
     }
-    console.log("The data sent is ", data);
+    // console.log("The data sent is ", data);
     let responseData;
     try {
         responseData = await result.json();
@@ -158,11 +166,11 @@ const handelrequests = async (body, globaldata, websocket = null) => {
             }
 
         }
-        
+        // console.log("Condition result for request number ", i + 1, ":", conditionresult[1]);
         if (conditionresult[1].nextdataavailable) {
-            previousrequest = conditionresult[1].nextdata; //We will store the nextdata in the previousrequest object
+            previousrequest = originalrequest; //We will store the nextdata in the nextrequest object
         } else {
-            previousrequest = {}; //If there is no nextdata we will reset the previousrequest object
+            previousrequest = {}; //If there is no nextdata we will reset the nextrequest object
         }
     }
 
@@ -184,11 +192,18 @@ const conditionschecker = (conditiondata, response) => {
             for (const condition of conditiondata[key]) {
                 const result = conditionvalidator(condition, response);
                 //with this we can easily go though all the condition easily
+                // console.log("Condition result for condition ", condition, ":", result);
                 if (result[0] === 1) {
-                    if (messageavailable) {
-                        return [-2, condition, 200];;
+                    // console.log("Condition met for condition ", condition, ":", result[1]);
+                    var returnval = -1 ? result.messageavailable : 1;
+                    var chgdata = changedata(condition, {});
+                    if (chgdata[0] === 0) {
+                        // console.log("Error changing data for next request:", chgdata[1]);
+                        return [0, chgdata[1], 400];
+
                     }
-                    return [1, condition, 200];
+                    return [returnval, condition, 200];
+                    // return [returnval, chgdata, 200]; //Till it is propley wired in
                 }
             }
         }
@@ -203,69 +218,114 @@ const resolvedata = async (request, previousrequest = {}) => {
      we can easily use the previous request to get the data
     so in this fucntion i will get the current data and then the previous data 
     I need to look in the previous data and then reqite the current data*/
-   const previousData = previousrequest;
-   const resolveValue = (value) => {
+    // return request; //This is a test function to check if the data is resolved or not
 
-        // Handle arrays
+    if (!previousrequest ||
+        typeof previousrequest !== 'object' ||
+        Array.isArray(previousrequest)) {
+        return request; //If there is no nextrequest we will return the current request
+    }//measn it is the first request so we can leave that here itslef
+
+    const hasnextdata = previousrequest.nextdataavailable ?? false;
+    const hasnextheader = previousrequest.nextheaderavailable ?? false;
+
+    if (!hasnextdata && !hasnextheader) {
+        return request; //If there is no nextdata or nextheader we will return the current request
+    }
+
+    const getvalue = (source, path) => {
+        if (source === undefined || source === null) {
+            return { found: false, value: undefined };
+        }
+
+        if (typeof source === 'object' && Object.hasOwn(source, path)) {
+            return { found: true, value: source[path] };
+        }
+
+        let current = source;
+
+        for (const part of path.split('.')) {
+            if (current === undefined ||
+                current === null ||
+                typeof current !== 'object' ||
+                !Object.hasOwn(current, part)) {
+                return { found: false, value: undefined };
+            }
+
+            current = current[part];
+        }
+
+        return { found: true, value: current };
+    }
+
+    const resolvevalue = (value, source) => {
         if (Array.isArray(value)) {
-            return value.map(resolveValue);
+            return value.map(v => resolvevalue(v, source));
         }
 
-        // Handle nested objects
         if (value !== null && typeof value === 'object') {
-            return Object.fromEntries(
-                Object.entries(value).map(([key, val]) => [
-                    key,
-                    resolveValue(val)
-                ])
-            );
+            return Object.fromEntries
+                (Object.entries(value).map(([k, v]) =>
+                    [k, resolvevalue(v, source)]));
         }
 
-        // Only strings can contain placeholders
-        if (typeof value !== 'string') {
-            return value;
+        if (typeof value !== "string") {
+            return value; //If the value is not a string we will return the value
         }
 
-        // Exact placeholder: "{{userId}}"
-        // Keeps the original data type
-        const exactMatch = value.match(/^{{\s*([^{}]+?)\s*}}$/);
+        const exactmatch = value.match(/^{{\s*(.*?)\s*}}$/);
 
-        if (exactMatch) {
-            const key = exactMatch[1].trim();
+        if (exactmatch) {
+            const key = exactmatch[1].trim();
+            const result = getvalue(source, key);
 
-            if (Object.hasOwn(previousData, key)) {
-                return previousData[key];
-            }
-
-            return value;
+            return result.found ? result.value : value;
         }
 
-        // Placeholder inside a larger string
-        // Example: "Bearer {{token}}"
-        return value.replace(
-            /{{\s*([^{}]+?)\s*}}/g,
-            (match, key) => {
-                key = key.trim();
+        return value.replace(/{{\s*(.*?)\s*}}/g, (match, key) => {
+            const result = getvalue(source, key.trim());
 
-                if (Object.hasOwn(previousData, key)) {
-                    return String(previousData[key]);
-                }
+            return result.found ? String(result.value) : match;
+        });
+    }
 
-                return match;
-            }
-        );
+    const resolvedrequest = { ...request };
+
+    if (hasnextdata) {
+
+        if (previousrequest.overwritenextdata === true) {
+            resolvedrequest.data = previousrequest.nextdata; //If the nextdata is available we will override the data in the current request
+        } else {
+            resolvedrequest.data =
+                resolvevalue(request.data, previousrequest.nextdata); //If the nextdata is available we will resolve the data in the current request
+        }
+
+    }
+
+    if (hasnextheader) {
+
+        if (previousrequest.overwriteheader === true) {
+            resolvedrequest.headers = previousrequest.nextheader; //If the nextheader is available we will override the header in the current request
+        } else {
+            resolvedrequest.headers =
+                resolvevalue(request.headers, previousrequest.nextheader); //If the nextheader is available we will resolve the header in the current request
+        }
+
+    }
+
+    for (const key of Object.keys(request)) {
+        if (key === "data" || key === "headers" || key === "condition") {
+            continue; //We have already resolved the data and headers and condition
+        }
+
+        if (hasnextdata) {
+            resolvedrequest[key] =
+                resolvevalue(request[key], previousrequest.nextdata); //If the nextdata is available we will resolve the other keys in the current request
+        }
+
     };
 
-    // Resolve the request, but leave condition untouched
-    return Object.fromEntries(
-        Object.entries(request).map(([key, value]) => [
-            key,
-            key === 'condition' ? value : resolveValue(value)
-        ])
-    );
-
-
-
+    return resolvedrequest;
 };
 const handelcheckpoint = async (message, completedata, websocket) => {
     //we have open a websocket connection and send the message to the client and wait for the response
@@ -285,6 +345,7 @@ const handelcheckpoint = async (message, completedata, websocket) => {
 }
 
 const conditionvalidator = (condition, response) => {
+    // return [1, condition, 200] //This is a test function to check if the condition is met or not
     const status = response.status;
     const conditionstatus = condition.status;
     const givencondition = condition.condition;
@@ -355,7 +416,7 @@ const conditionvalidator = (condition, response) => {
                 result = actual <= expected;
                 break;
         }
-
+        // console.log(`Evaluating condition: ${actual} ${operator} ${expected} => ${result}`);
         return result ? [1, condition] : [0];
     }
 
@@ -370,5 +431,12 @@ const conditionvalidator = (condition, response) => {
 
     return [-1];
 };
+const changedata = (data, nextrequest) => {
+    //Now the condition is verfifed so now we need to chaneg the data for the next next data
+    // console.log("Changing data for next request based on condition:", data, "and next request:", nextrequest);
+    return [1] //test
+    // return parsedata(data, nextrequest);
+}
+
 
 export { sequencetestController };
