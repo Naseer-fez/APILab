@@ -3,7 +3,7 @@ import path from "path";
 import { log } from "../utils/logger.js";
 
 //so many vars need to fix this later on 
-const parsebody = async (body, file, global = {}, first = false) => {
+const parsebody = async (body, file, global = {}, first = false, previousrequest = null) => {
     //First lets Parse the link 
     // console.log("Parsing body::::::::: ", body);
     // console.log("Parsing body::::::::: ", { body, file, global, first });
@@ -211,7 +211,7 @@ const parsedata = (data, toremove = [-2], datatostore = []) => {
 
 }
 
-const filedataparser = async (data, fileavailable, file, first = false) => {
+const filedataparser = async (data, fileavailable, file, first = false, previousrequest = null) => {
     var filedata = {};
     var message = "";
     var statuscode = 0;
@@ -493,6 +493,25 @@ const validatebrackets = (data) => {
 
     return [0, `Unsupported data type: ${typeof data}`, 400];
 };
+
+const toogledata = (previousdata, currentdata) => {
+    const nextvalues = ["nextdata", "nextdataavailable", "overwritenextdata", "nextheader", "nextheaderavailable",
+        "overwriteheader"];
+    //lets just hardcode this for now as we have only 3 keys to check
+
+    if (currentdata.data !== undefined) {
+        previousdata.nextdata = currentdata.data;
+        previousdata.nextdataavailable = true;
+        previousdata.overwritenextdata = currentdata.overwritenextdata ?? false;
+    }
+
+    if (currentdata.headers !== undefined) {
+        previousdata.nextheader = currentdata.headers;
+        previousdata.nextheaderavailable = true;
+        previousdata.overwriteheader = currentdata.overwriteheader ?? false;
+    }
+    return previousdata;
+}
 /*
 "if":{
 "status":[200] the list of conditions
@@ -526,4 +545,4 @@ const validatebrackets = (data) => {
 
 
 
-export { parsebody };
+export { parsebody, parsedata, toogledata };
