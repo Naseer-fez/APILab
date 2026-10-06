@@ -146,14 +146,12 @@ const handelrequests = async (body, globaldata, websocket = null) => {
         globalresponse.response[i] = response[1]; //We will store the response in the globalresponse object
         const conditionresult = conditionschecker(originalrequest.condition
             , response[1]);
-        finalresult.push({
-            request: originalrequest,
-            response: response[1],
-            conditionresult: conditionresult
-        });
+
         if (conditionresult[0] === 0) {
+            console.log("HIIIIIIII");
             return [0, {
-                message: 'Condition not met',
+                message: 'Condition not met for the following',
+                conditionmessage: conditionresult[1],
                 conditionresult: conditionresult
             }, 400];
         } else if (conditionresult[0] === -2) {
@@ -164,7 +162,11 @@ const handelrequests = async (body, globaldata, websocket = null) => {
                 //Now should  i try to hold the users for a checkpoint miss big thinking here
 
             }
-
+            finalresult.push({
+                request: originalrequest,
+                response: response[1],
+                conditionresult: conditionresult
+            });
         }
         // console.log("Condition result for request number ", i + 1, ":", conditionresult[1]);
         if (conditionresult[1].nextdataavailable) {
@@ -196,13 +198,10 @@ const conditionschecker = (conditiondata, response) => {
                 if (result[0] === 1) {
                     // console.log("Condition met for condition ", condition, ":", result[1]);
                     var returnval = -1 ? result.messageavailable : 1;
-                    var chgdata = changedata(condition, {});
-                    if (chgdata[0] === 0) {
-                        // console.log("Error changing data for next request:", chgdata[1]);
-                        return [0, chgdata[1], 400];
+                    var chgdata = changedata(condition, response, {});
+                    if (chgdata[0] == 0) return [chgdata[0], chgdata[1], 400];
+                    return [returnval, chgdata[1], 200];
 
-                    }
-                    return [returnval, condition, 200];
                     // return [returnval, chgdata, 200]; //Till it is propley wired in
                 }
             }
@@ -346,96 +345,183 @@ const handelcheckpoint = async (message, completedata, websocket) => {
 
 const conditionvalidator = (condition, response) => {
     // return [1, condition, 200] //This is a test function to check if the condition is met or not
-    const status = response.status;
+    const status = Array.isArray(response.status) ? response.status : [response.status];
     const conditionstatus = condition.status;
     const givencondition = condition.condition;
-
-    // First preference: explicit condition
-    if (condition.conditionavailable) {
-        // Example:
-        // "{{response.body.age}} >= 18"
-
-        const match = givencondition.match(
-            /^{{\s*(.*?)\s*}}\s*(==|!=|>=|<=|>|<)\s*(.+)$/
-        );
-
-        if (!match) {
-            return [0, "Invalid condition expression", 400];
-        }
-
-        const path = match[1];
-        const operator = match[2];
-        let expected = match[3].trim();
-
-        // Resolve response.body.age
-        let actual = response;
-
-        for (const part of path.split(".")) {
-            if (actual == null || !(part in actual)) {
-                return [0, `Reference ${path} does not exist`, 400];
+    if (condition.conditionavailable == false) return [-1] //just to thow off the if condition
+    const refactordata = (givencondition) => {
+        if (typeof givencondition === "number") return givencondition; //measn directly the number is given so we can return that
+        if (typeof givencondition === "string") {
+            return givencondition.replace(/{{\s*(.*?)\s*}}/g, "$1");
+        } if (typeof givencondition === "object") {
+            //Then iterate though each key and get the value and return that
+            const result = {};
+            for (const key in givencondition) {
+                result[key] = refactordata(givencondition[key]);
             }
+            return result;
 
-            actual = actual[part];
+        }
+        return givencondition; //measn the data is given in the response so we can return that
+    };
+    const data = refactordata(givencondition); //This will give us the data to compare with the status code
+    //if the data is string we can directy comp that to status code
+    if (typeof data === "number") {
+        for (const stat of status) {
+            if (stat === givencondition || stat == parseInt(givencondition)) {
+                return [1, condition, 200];
+            }
+            //simple comparision if the status is number we can directy comp that to status code
+
+        }
+        return [0, {
+            message: `The status code ${givencondition} is not present in the response status codes ${status}`,
+            condition: condition
+        }, 400]; //Invalid condition format
+
+
+
+    };
+    if (typeof data === "object") {
+        const result = {};
+        var index = 0;
+        for (const cond of data) {
+            result[index] = conditionvalidator(cond, response); //validate each condition
+            index++;
+        }
+        return [1, result, 200]; //return the result of the validation
+    }
+    //Now the actula comparision the string 
+
+    const matchoperators = data.match(/===|!==|==|!=|>=|<=|>|</);
+    if (!matchoperators) {
+        //Now here is something to thnk , the strinng could be a number also , lets check with the status code 
+        var msg;
+        if (typeof data === "string" && status.includes(parseInt(data))) {
+            for (const stat of status) {
+                if (stat === parseInt(data)) {
+                    return [1, condition, 200];
+                }
+            }
+            msg = `The status code ${data} is not present in the response status codes ${status}`;
+
+
+        } else {
+            msg = `Invalid condition format
+            The available operators are ===, !==, ==, !=, >=, <=, >, <
+            `
         }
 
-        // Convert expected value
-        if (
-            (expected.startsWith('"') && expected.endsWith('"')) ||
-            (expected.startsWith("'") && expected.endsWith("'"))
-        ) {
-            expected = expected.slice(1, -1);
-        } else if (expected === "true") {
-            expected = true;
-        } else if (expected === "false") {
-            expected = false;
-        } else if (expected === "null") {
-            expected = null;
-        } else if (!Number.isNaN(Number(expected))) {
-            expected = Number(expected);
+        return [0, {
+            message: msg, condition: condition
+        }, 400]; //Invalid condition format
+    }
+    const operator = matchoperators[0];
+    var [left, right] = data.split(operator).map(s => s.trim());
+    const val = normalizeValue(left, right);
+    if (val[0] == 0) return [0, { message: val[1], condition: condition }, 400];
+    [left, right] = val[1]; //normalized values easy to compare to our data
+    const operators = { //simple replacemnt of the switch case with the object mapping
+        "==": (a, b) => a == b,
+        "===": (a, b) => a === b,
+        "!=": (a, b) => a != b,
+        "!==": (a, b) => a !== b,
+        ">": (a, b) => a > b,
+        "<": (a, b) => a < b,
+        ">=": (a, b) => a >= b,
+        "<=": (a, b) => a <= b
+    };
+    const alldatavalues = {
+        response,
+        condition: condition,
+        data
+    };
+    left = objscreation(left);
+    right = objscreation(right);
+    //for indinvidual items
+    // console.log("Left value:", left, "Right value:", right, "Operator:", operator);
+    // var message = `The condition ${left} ${operator} ${right} is ${finalresult ? "met" : "not met"}`;
+    // const whichisaarray = Array.isArray(left) || Array.isArray(right); //so now just loop though them 
+    // const finalresult = operators[operator](left, right);
+    const leftValues = Array.isArray(left) ? left : [left];
+    const rightValues = Array.isArray(right) ? right : [right];
+    let finalresult = false;
+    for (const l of leftValues) {
+        for (const r of rightValues) {
+            if (operators[operator](l, r)) {
+                finalresult = true;
+                break;
+            }
         }
 
-        let result;
-
-        switch (operator) {
-            case "==":
-                result = actual == expected;
-                break;
-            case "!=":
-                result = actual != expected;
-                break;
-            case ">":
-                result = actual > expected;
-                break;
-            case "<":
-                result = actual < expected;
-                break;
-            case ">=":
-                result = actual >= expected;
-                break;
-            case "<=":
-                result = actual <= expected;
-                break;
-        }
-        // console.log(`Evaluating condition: ${actual} ${operator} ${expected} => ${result}`);
-        return result ? [1, condition] : [0];
+        if (finalresult) break;
     }
 
-    // Second preference: status shortcut
-    if (condition.statusavailable) {
-        if (conditionstatus.includes(status)) {
-            return [1, condition];
-        }
+    const message = `The condition ${left} ${operator} ${right} is ${finalresult ? "met" : "not met"}`;
 
-        return [0];
+    return [finalresult, { message, condition }, 200];
+
+
+
+
+
+
+}
+const normalizeValue = (left, right) => {
+    return [1, [left, right]]; //later on 
+}
+const objscreation = (value, alldatavalues) => {
+    //Will get the object path from the value and return the value from the response object
+    value = value.trim();
+    const match = value.match(/^{{\s*(.*?)\s*}}$/);
+
+    if (match) {
+        value = match[1];
     }
 
-    return [-1];
-};
-const changedata = (data, nextrequest) => {
-    //Now the condition is verfifed so now we need to chaneg the data for the next next data
-    // console.log("Changing data for next request based on condition:", data, "and next request:", nextrequest);
-    return [1] //test
-    // return parsedata(data, nextrequest);
+    if (!isNaN(value) && value !== "") {
+        return Number(value);
+    }
+
+
+    if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+    ) {
+        return value.slice(1, -1);
+    }
+
+    // Object path
+    const result = value.split(".")
+        .reduce((obj, key) => obj?.[key], alldatavalues);
+    return result !== undefined ? result : value; //If the value is not found in the response object we will return the value itself
+
+}
+
+const changedata = (data, response, nextrequest = {}) => {
+    /*
+    This function is called after a condition has been successfully verified.
+    
+        The purpose of this function is to prepare the data that will be used by
+        the next request in the sequence.
+    
+        The condition can define:
+        - Headers to be added or changed in the next request
+        - Headers to be removed from the next request
+        - Body data to be added or changed in the next request
+        - Body data to be removed from the next request
+        - Explicit nextdata that should be passed to the next request
+        - Whether the nextdata should overwrite or merge with existing data
+    */
+    console.log("All parameters:", data);
+    console.log("All parameters:", response);
+
+
+
+
+
+
+    return [1, response] //test
 }
 
 
