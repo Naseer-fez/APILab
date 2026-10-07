@@ -16,7 +16,17 @@ const payload = {
             storedata: true,
             fileavailable: false,
             expectedstatus: 200,
-            ignoreerrors: false
+            ignoreerrors: false,
+            conditions: {
+                "if": {
+                    condition: "{{response.status}} == 200",
+                    status: [200],
+                    raiseerror: false,
+                    message: "ok",
+                    header: {},
+                    data: { "message": "ahhaha" }
+                }
+            }
         },
         {
             useheader: true,
@@ -33,16 +43,7 @@ const payload = {
             fileavailable: false,
             expectedstatus: 200,
             ignoreerrors: false,
-            conditions: {
-                "if": {
-                    condition: "{{response.status}} == 200",
-                    status: [200],
-                    raiseerror: false,
-                    message: "ok",
-                    header: {},
-                    body: {"message":"ahhaha"}
-                }
-            }
+
         }
     ]
 };

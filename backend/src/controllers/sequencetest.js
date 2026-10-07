@@ -23,7 +23,7 @@ const sequencetestController = async (req, res) => {
     var globaldata = await parsebody(reqbody[0], req.file, {}, true);
     // console.log("After parsing the body for request number 1:", globaldata);
     if (globaldata[0] === 0) {
-        return res.status(400).json({ message: globaldata[2] });
+        return res.status(400).json({ message: globaldata[1] });
     }
     totalrequestsdata.push(globaldata[1][0]); //We will push the parsed body to the totalrequestsdata array
     globaldata = globaldata[1][1]; //We will get the global data from the first request
@@ -162,14 +162,15 @@ const handelrequests = async (body, globaldata, websocket = null) => {
                 //Now should  i try to hold the users for a checkpoint miss big thinking here
 
             }
-            finalresult.push({
-                request: originalrequest,
-                response: response[1],
-                conditionresult: conditionresult
-            });
         }
+        finalresult.push({
+            request: originalrequest,
+            response: response[1],
+            conditionresult: conditionresult
+        });
         // console.log("Condition result for request number ", i + 1, ":", conditionresult[1]);
-        if (conditionresult[1].nextdataavailable) {
+        if (conditionresult[1]?.nextdataavailable || conditionresult[1]?.nextheaderavailable) {
+            Object.assign(originalrequest, conditionresult[1]);
             previousrequest = originalrequest; //We will store the nextdata in the nextrequest object
         } else {
             previousrequest = {}; //If there is no nextdata we will reset the nextrequest object
@@ -197,9 +198,10 @@ const conditionschecker = (conditiondata, response) => {
                 // console.log("Condition result for condition ", condition, ":", result);
                 if (result[0] === 1) {
                     // console.log("Condition met for condition ", condition, ":", result[1]);
-                    var returnval = -1 ? result.messageavailable : 1;
+                    var returnval = condition.raiseerror ? -2 : 1;
                     var chgdata = changedata(condition, response, {});
-                    if (chgdata[0] == 0) return [chgdata[0], chgdata[1], 400];
+                    if (chgdata[0] == 0) { return [chgdata[0], chgdata[1], 400] };
+                    // console.log("Changed data for condition ", condition, ":", chgdata[1]);
                     return [returnval, chgdata[1], 200];
 
                     // return [returnval, chgdata, 200]; //Till it is propley wired in
@@ -210,6 +212,62 @@ const conditionschecker = (conditiondata, response) => {
     return [0, conditiondata, 200];
 
 }
+const getvalue = (source, path) => {
+    if (source === undefined || source === null) {
+        return { found: false, value: undefined };
+    }
+
+    if (typeof source === 'object' && Object.hasOwn(source, path)) {
+        return { found: true, value: source[path] };
+    }
+
+    let current = source;
+
+    for (const part of path.split('.')) {
+        if (current === undefined ||
+            current === null ||
+            typeof current !== 'object' ||
+            !Object.hasOwn(current, part)) {
+            return { found: false, value: undefined };
+        }
+
+        current = current[part];
+    }
+
+    return { found: true, value: current };
+}
+
+const resolvevalue = (value, source) => {
+    if (Array.isArray(value)) {
+        return value.map(v => resolvevalue(v, source));
+    }
+
+    if (value !== null && typeof value === 'object') {
+        return Object.fromEntries
+            (Object.entries(value).map(([k, v]) =>
+                [k, resolvevalue(v, source)]));
+    }
+
+    if (typeof value !== "string") {
+        return value; //If the value is not a string we will return the value
+    }
+
+    const exactmatch = value.match(/^{{\s*(.*?)\s*}}$/);
+
+    if (exactmatch) {
+        const key = exactmatch[1].trim();
+        const result = getvalue(source, key);
+
+        return result.found ? result.value : value;
+    }
+
+    return value.replace(/{{\s*(.*?)\s*}}/g, (match, key) => {
+        const result = getvalue(source, key.trim());
+
+        return result.found ? String(result.value) : match;
+    });
+}
+
 const resolvedata = async (request, previousrequest = {}) => {
     /*So this function first reads the data  and ready the data to the next request
     So based on the previous request we will alter the data in this 
@@ -230,62 +288,6 @@ const resolvedata = async (request, previousrequest = {}) => {
 
     if (!hasnextdata && !hasnextheader) {
         return request; //If there is no nextdata or nextheader we will return the current request
-    }
-
-    const getvalue = (source, path) => {
-        if (source === undefined || source === null) {
-            return { found: false, value: undefined };
-        }
-
-        if (typeof source === 'object' && Object.hasOwn(source, path)) {
-            return { found: true, value: source[path] };
-        }
-
-        let current = source;
-
-        for (const part of path.split('.')) {
-            if (current === undefined ||
-                current === null ||
-                typeof current !== 'object' ||
-                !Object.hasOwn(current, part)) {
-                return { found: false, value: undefined };
-            }
-
-            current = current[part];
-        }
-
-        return { found: true, value: current };
-    }
-
-    const resolvevalue = (value, source) => {
-        if (Array.isArray(value)) {
-            return value.map(v => resolvevalue(v, source));
-        }
-
-        if (value !== null && typeof value === 'object') {
-            return Object.fromEntries
-                (Object.entries(value).map(([k, v]) =>
-                    [k, resolvevalue(v, source)]));
-        }
-
-        if (typeof value !== "string") {
-            return value; //If the value is not a string we will return the value
-        }
-
-        const exactmatch = value.match(/^{{\s*(.*?)\s*}}$/);
-
-        if (exactmatch) {
-            const key = exactmatch[1].trim();
-            const result = getvalue(source, key);
-
-            return result.found ? result.value : value;
-        }
-
-        return value.replace(/{{\s*(.*?)\s*}}/g, (match, key) => {
-            const result = getvalue(source, key.trim());
-
-            return result.found ? String(result.value) : match;
-        });
     }
 
     const resolvedrequest = { ...request };
@@ -343,10 +345,9 @@ const handelcheckpoint = async (message, completedata, websocket) => {
 
 }
 
-const conditionvalidator = (condition, response) => {
+const conditionvalidator = (condition, response, onlydata = false) => {
     // return [1, condition, 200] //This is a test function to check if the condition is met or not
     const status = Array.isArray(response.status) ? response.status : [response.status];
-    const conditionstatus = condition.status;
     const givencondition = condition.condition;
     if (condition.conditionavailable == false) return [-1] //just to thow off the if condition
     const refactordata = (givencondition) => {
@@ -392,6 +393,10 @@ const conditionvalidator = (condition, response) => {
         return [1, result, 200]; //return the result of the validation
     }
     //Now the actula comparision the string 
+    if (onlydata) {
+        return [1, data, 200];
+    }
+
 
     const matchoperators = data.match(/===|!==|==|!=|>=|<=|>|</);
     if (!matchoperators) {
@@ -436,11 +441,14 @@ const conditionvalidator = (condition, response) => {
         condition: condition,
         data
     };
-    left = objscreation(left);
-    right = objscreation(right);
+    left = objscreation(left, alldatavalues);
+    right = objscreation(right, alldatavalues);
+
+
+
     //for indinvidual items
     // console.log("Left value:", left, "Right value:", right, "Operator:", operator);
-    // var message = `The condition ${left} ${operator} ${right} is ${finalresult ? "met" : "not met"}`;
+
     // const whichisaarray = Array.isArray(left) || Array.isArray(right); //so now just loop though them 
     // const finalresult = operators[operator](left, right);
     const leftValues = Array.isArray(left) ? left : [left];
@@ -459,7 +467,7 @@ const conditionvalidator = (condition, response) => {
 
     const message = `The condition ${left} ${operator} ${right} is ${finalresult ? "met" : "not met"}`;
 
-    return [finalresult, { message, condition }, 200];
+    return [finalresult ? 1 : 0, { message, condition }, 200];
 
 
 
@@ -472,6 +480,10 @@ const normalizeValue = (left, right) => {
 }
 const objscreation = (value, alldatavalues) => {
     //Will get the object path from the value and return the value from the response object
+    if (typeof value !== "string") {
+        return value; //If the value is not a string we will return the value
+    }
+
     value = value.trim();
     const match = value.match(/^{{\s*(.*?)\s*}}$/);
 
@@ -496,33 +508,109 @@ const objscreation = (value, alldatavalues) => {
         .reduce((obj, key) => obj?.[key], alldatavalues);
     return result !== undefined ? result : value; //If the value is not found in the response object we will return the value itself
 
+
 }
 
-const changedata = (data, response, nextrequest = {}) => {
+const changedata = (condition, response, nextrequest = {}) => {
     /*
-    This function is called after a condition has been successfully verified.
-    
-        The purpose of this function is to prepare the data that will be used by
-        the next request in the sequence.
-    
-        The condition can define:
-        - Headers to be added or changed in the next request
-        - Headers to be removed from the next request
-        - Body data to be added or changed in the next request
-        - Body data to be removed from the next request
-        - Explicit nextdata that should be passed to the next request
-        - Whether the nextdata should overwrite or merge with existing data
+        This function runs after a condition has successfully passed.
+
+        Its job is to prepare information for the NEXT request.
+
+        Possible changes:
+        1. Prepare headers for the next request
+        2. Prepare body data for the next request
+        3. Prepare explicit nextdata
+        4. Set overwrite behaviour
+
+        The actual merging/overwriting is handled later by resolvedata().
     */
-    console.log("All parameters:", data);
-    console.log("All parameters:", response);
+
+    if (!condition || typeof condition !== "object") {
+        return [1, nextrequest, 200];
+    }
+
+    const result = { ...nextrequest };
+
+    const resolve = (value) => {
+        return resolvevalue(value, { response });
+    };
+    if (condition.headeravailable === true) {
+        if (!Object.hasOwn(condition, "header")) {
+            return [
+                0,
+                {
+                    message: "headeravailable is true but header is missing",
+                    condition
+                },
+                400
+            ];
+        }
+        result.nextheader = resolve(condition.header);
+        result.nextheaderavailable = true;
+        result.overwriteheader = condition.overwriteheader ?? true;
+    }
+    if (condition.dataavailable === true) {
+
+        if (!Object.hasOwn(condition, "data")) {
+            return [
+                0,
+                {
+                    message: "dataavailable is true but data is missing",
+                    condition
+                },
+                400
+            ];
+        }
+
+        result.nextdata = resolve(condition.data);
+        result.nextdataavailable = true;
+
+        // Default: replace existing request data
+        result.overwritenextdata =
+            condition.overwritenextdata ?? true;
+    }  
+  if (condition.nextdataavailable === true) {
+
+        if (!Object.hasOwn(condition, "nextdata")) {
+            return [
+                0,
+                {
+                    message: "nextdataavailable is true but nextdata is missing",
+                    condition
+                },
+                400
+            ];
+        }
+
+        result.nextdata = resolve(condition.nextdata);
+        result.nextdataavailable = true;
+
+        result.overwritenextdata =
+            condition.overwritenextdata ?? true;
+    }
+    if (condition.nextheaderavailable === true) {
+
+        if (!Object.hasOwn(condition, "nextheader")) {
+            return [
+                0,
+                {
+                    message: "nextheaderavailable is true but nextheader is missing",
+                    condition
+                },
+                400
+            ];
+        }
+
+        result.nextheader = resolve(condition.nextheader);
+        result.nextheaderavailable = true;
+
+        result.overwriteheader =
+            condition.overwriteheader ?? true;
+    }
 
 
-
-
-
-
-    return [1, response] //test
-}
-
+    return [1, result, 200];
+};
 
 export { sequencetestController };

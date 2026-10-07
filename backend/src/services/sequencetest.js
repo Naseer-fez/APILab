@@ -377,7 +377,7 @@ const validatecondition = (condition) => {
         condition: "string",
         raiseerror: "boolean",
         header: "object",
-        body: "object",
+        data: "object", // We read the body as data
         nextdata: "object",
         overwritenextdata: "boolean"
     };
@@ -498,17 +498,18 @@ const toogledata = (previousdata, currentdata) => {
     const nextvalues = ["nextdata", "nextdataavailable", "overwritenextdata", "nextheader", "nextheaderavailable",
         "overwriteheader"];
     //lets just hardcode this for now as we have only 3 keys to check
+    
 
     if (currentdata.data !== undefined) {
         previousdata.nextdata = currentdata.data;
         previousdata.nextdataavailable = true;
-        previousdata.overwritenextdata = currentdata.overwritenextdata ?? false;
+        previousdata.overwritenextdata = currentdata.overwritenextdata ?? true;
     }
 
     if (currentdata.headers !== undefined) {
         previousdata.nextheader = currentdata.headers;
         previousdata.nextheaderavailable = true;
-        previousdata.overwriteheader = currentdata.overwriteheader ?? false;
+        previousdata.overwriteheader = currentdata.overwriteheader ?? true;
     }
     return previousdata;
 }
