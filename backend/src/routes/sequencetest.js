@@ -7,6 +7,7 @@ sequencetestRouter.post('/sequencetest', sequencetestController);
 
 sequencetestRouter.post('/sequencetest/file', upload.single('file'), sequencetestController);
 
+
 /*
 This is the most Diffrent endpoint of all the endpoints
 As this endpoint is used to create a Simulation test.
@@ -113,25 +114,35 @@ condition:{
 //This will remove all the heders in the list ,
 //if this is set to -1 then all the heders will be removed except the presnt header from the data 
 }
-"body":{
-"somekey":"{{body.somekey}}"
+"data":{
+"somekey":"{{data.somekey}}"
 "toremovedata":[] //This will remove all the body in the list ,
 
 
 }
 "nextdata":{} You can also set the data in the present request for the next request
 "overwritenextdata":true //This is used to overwrite the data in the next request if this is set to false then the data will be merged with the next request data
-}
-"else if":{
+},
+"elseif":{
 //same above data
 
 }
 "else":{}
 
 Now if the key is anything other than the 
-["if","else if","else"] Then the key will be used as the else block 
+["if","elseif","else"] Then the key will be used as the else block 
+**NOTE** 
+The only object reference keys that are allowed 
+response,header,data
+reponse is the recived response from the server
+the header is the sent data to the server
+data is the body to be sent to the server
+**End**
+Condition can be written in any following order, but nested conditions are not implemented yet.
+The Preprossing of the data is done very strongly and strictly with no fuzzing matching of the keys yet , so be careful about writing the defualt keys
 
-`
+
+**Rate limit being off is recommended as the requests are sent in sequence and the rate limit can be set in the server side to avoid any issues.** 
 
 Simulation
 │
