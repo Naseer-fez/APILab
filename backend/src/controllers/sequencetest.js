@@ -46,10 +46,10 @@ const sequencetestController = async (req, res) => {
         // console.log("After toggling the data for request number ", reqnum, ":", totalrequestsdata[reqnum-1]);
         //Each push reprsets a single request that we will send to the handelrequests function
     }
-    const ws = req.ws; //will work on this later
+    //will work on this later
     // console.log("The total requests data is :", totalrequestsdata);
     //Body has been parsed and validated, now we can send the response to the client
-    const finalresult = await handelrequests(totalrequestsdata, globaldata, ws); //We will send the parsed body to the handelrequests function
+    const finalresult = await handelrequests(totalrequestsdata, globaldata, res, req); //We will send the parsed body to the handelrequests function
     return res.status(finalresult[2]).json(finalresult[1]); //We can diraclty send the response we will validate that in the function itself    
 }
 const sendrequest = async ({ link, method, headers, data = {}, filedata = null, fileavailable = false }) => {
@@ -86,16 +86,24 @@ const sendrequest = async ({ link, method, headers, data = {}, filedata = null, 
         });
     }
     // console.log("The data sent is ", data);
+
     let responseData;
+
     try {
-        responseData = await result.json();
+        responseData = await result.clone().json();
     } catch {
         responseData = await result.text();
     }
-    return [result.ok ? 1 : 0, {
-        status: result.status, data: responseData,
-        headers: Object.fromEntries(result.headers.entries())
-    }, result.status];
+
+    return [
+        result.ok ? 1 : 0,
+        {
+            status: result.status,
+            data: responseData,
+            headers: Object.fromEntries(result.headers.entries())
+        },
+        result.status
+    ];
 
 }
 const sendfile = async (link, method, headers, filedata) => {
@@ -118,7 +126,7 @@ const sendfile = async (link, method, headers, filedata) => {
 
 
 }
-const handelrequests = async (body, globaldata, websocket = null) => {
+const handelrequests = async (body, globaldata, res = null, req = null) => {
     //We have the body
     //First pick the data and send it Cause this is a list we can easily iterate over that
     // a loop is good but the best idea will be a recursive function that will send the '
@@ -138,7 +146,7 @@ const handelrequests = async (body, globaldata, websocket = null) => {
         const originalrequest = body[i];
         const request = await resolvedata(originalrequest, previousrequest);
 
-        // console.log("Resolved request for request number ", i + 1, ":", request);
+        console.log("Resolved request for request number ", i + 1, ":", request);
         const response = await sendrequest(request);
         if (response[0] === 0) {
             return response; //If the request failed we will return the error
@@ -157,7 +165,7 @@ const handelrequests = async (body, globaldata, websocket = null) => {
         } else if (conditionresult[0] === -2) {
             //This is like a checkpoint to rasie
             const message = conditionresult[1].message;
-            const result = handelcheckpoint(message, [globalresponse, finalresult, originalrequest], websocket);
+            const result = await handelcheckpoint(message, [globalresponse, finalresult, originalrequest], res, req);
             if (result[0] === 0) {
                 //Now should  i try to hold the users for a checkpoint miss big thinking here
 
@@ -328,20 +336,11 @@ const resolvedata = async (request, previousrequest = {}) => {
 
     return resolvedrequest;
 };
-const handelcheckpoint = async (message, completedata, websocket) => {
+const handelcheckpoint = async (message, completedata, res, req) => {
     //we have open a websocket connection and send the message to the client and wait for the response
     //Hard coded this function
-    return [1, 1, 200]; //Not yet built
-    const datatosend = {
-        "message": message,
-        "globalresponse": completedata[0],
-        "finalresult": completedata[1],
-        "originalrequest": completedata[2]
-    }
-    const result = await sendWebSocketMessage(websocket, datatosend);
-    return result;
-
-
+    //lets use serverside events to send the message to the client and wait for the response
+    return [1, 1, 200];
 
 }
 
@@ -569,8 +568,8 @@ const changedata = (condition, response, nextrequest = {}) => {
         // Default: replace existing request data
         result.overwritenextdata =
             condition.overwritenextdata ?? true;
-    }  
-  if (condition.nextdataavailable === true) {
+    }
+    if (condition.nextdataavailable === true) {
 
         if (!Object.hasOwn(condition, "nextdata")) {
             return [
