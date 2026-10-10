@@ -2,7 +2,7 @@ import { parsebody, parsedata, toogledata } from '../services/sequencetest.js';
 import WebSocket from 'ws';
 import fs from 'fs';
 import { log } from '../utils/logger.js';
-
+import { sendtheevent } from '../services/sequencetestsse.js';
 
 
 
@@ -49,6 +49,7 @@ const sequencetestController = async (req, res) => {
     //will work on this later
     // console.log("The total requests data is :", totalrequestsdata);
     //Body has been parsed and validated, now we can send the response to the client
+    // console.log("Parsed body is ", totalrequestsdata[0].condit);
     const finalresult = await handelrequests(totalrequestsdata, globaldata, res, req); //We will send the parsed body to the handelrequests function
     return res.status(finalresult[2]).json(finalresult[1]); //We can diraclty send the response we will validate that in the function itself    
 }
@@ -146,7 +147,7 @@ const handelrequests = async (body, globaldata, res = null, req = null) => {
         const originalrequest = body[i];
         const request = await resolvedata(originalrequest, previousrequest);
 
-        console.log("Resolved request for request number ", i + 1, ":", request);
+        // console.log("Resolved request for request number ", i + 1, ":", request);
         const response = await sendrequest(request);
         if (response[0] === 0) {
             return response; //If the request failed we will return the error
@@ -164,8 +165,8 @@ const handelrequests = async (body, globaldata, res = null, req = null) => {
             }, 400];
         } else if (conditionresult[0] === -2) {
             //This is like a checkpoint to rasie
-            const message = conditionresult[1].message;
-            const result = await handelcheckpoint(message, [globalresponse, finalresult, originalrequest], res, req);
+            const message = conditionresult[1];
+            const result = handelcheckpoint(message, [globalresponse, finalresult, originalrequest], res, req);
             if (result[0] === 0) {
                 //Now should  i try to hold the users for a checkpoint miss big thinking here
 
@@ -189,7 +190,7 @@ const handelrequests = async (body, globaldata, res = null, req = null) => {
 
 
 }
-const conditionschecker = (conditiondata, response) => {
+const conditionschecker = (conditiondata, response,error) => {
     if (conditiondata === undefined || conditiondata === null) {
         return [1, {}, 200] //Nothing to check 
     }
@@ -202,15 +203,21 @@ const conditionschecker = (conditiondata, response) => {
         if (Object.hasOwn(conditiondata, key)) {
             for (const condition of conditiondata[key]) {
                 const result = conditionvalidator(condition, response);
+                
                 //with this we can easily go though all the condition easily
                 // console.log("Condition result for condition ", condition, ":", result);
                 if (result[0] === 1) {
                     // console.log("Condition met for condition ", condition, ":", result[1]);
-                    var returnval = condition.raiseerror ? -2 : 1;
+                    // var returnval = condition.raiseerror ? -2 : 1
+                    const returnval = () => {
+                        const { raiseerror, raisecheckpoint } = condition;
+                        console.log("raiseerror:", raiseerror, "raisecheckpoint:", raisecheckpoint);
+                        return raisecheckpoint || raiseerror ? -2 : 1;
+                    };
                     var chgdata = changedata(condition, response, {});
                     if (chgdata[0] == 0) { return [chgdata[0], chgdata[1], 400] };
                     // console.log("Changed data for condition ", condition, ":", chgdata[1]);
-                    return [returnval, chgdata[1], 200];
+                    return [returnval(), chgdata[1], 200];
 
                     // return [returnval, chgdata, 200]; //Till it is propley wired in
                 }
@@ -336,11 +343,15 @@ const resolvedata = async (request, previousrequest = {}) => {
 
     return resolvedrequest;
 };
-const handelcheckpoint = async (message, completedata, res, req) => {
+const handelcheckpoint = (message, completedata, res, req) => {
     //we have open a websocket connection and send the message to the client and wait for the response
     //Hard coded this function
     //lets use serverside events to send the message to the client and wait for the response
-    return [1, 1, 200];
+    console.log("Sending checkpoint message to the client:", message);
+    const value = sendtheevent(req.query.jobid ?? 1, { message: message, data: completedata }, "checkpoint");
+    //no need to await lets do the rest of the work 
+    console.log("Checkpoint message sent to the client:", message, "with result:", value);
+    return value;
 
 }
 

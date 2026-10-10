@@ -1,12 +1,14 @@
 import express from 'express';
 import { upload } from '../middelware/uploadfile.js';
 import { sequencetestController } from '../controllers/sequencetest.js';
+import { SSEcontroller } from '../services/sequencetestsse.js';
 const sequencetestRouter = express.Router();
 
 sequencetestRouter.post('/sequencetest', sequencetestController);
 
 sequencetestRouter.post('/sequencetest/file', upload.single('file'), sequencetestController);
 
+sequencetestRouter.get('/sequencetest/events/:jobid', SSEcontroller);
 
 /*
 This is the most Diffrent endpoint of all the endpoints
@@ -105,6 +107,7 @@ condition:{
 ***Note if the condition is not availabe then the status will be checked for the condition
 "status":[200] the list of conditions
 "rasieerror":false //This will rasie a error or a checkpoint data for you
+"raisecheckpoint":true //This will rasie a checkpoint data for you
 "message":"" //this is the message that is to be sent to you if the condition is met
 //Can be used to stream the data to the user to see the progress
 "header":{

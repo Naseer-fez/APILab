@@ -49,6 +49,7 @@ const parsebody = async (body, file, global = {}, first = false, previousrequest
     var storeheader = body.storeheader ?? global.storeheader ?? true; //if not provided then it will be true
     var storedata = body.storedata ?? global.storedata ?? true; //if not provided then it will be true
     var expectedstatus = body.expectedstatus ?? global.expectedstatus ?? 200; //if not provided then it will be 200
+    var raisecheckpoint = body.raisecheckpoint ?? global.raisecheckpoint ?? false;
     var ignoreerrors = body.ignoreerrors ?? global.ignoreerrors ?? false;
     //Now after this the only thing remains is the Condition part whihc will deal will all the conditions that is to be followed
     var condition = conditionparser(body.conditions ?? null, body.conditionavailble ?? false);
@@ -76,11 +77,12 @@ const parsebody = async (body, file, global = {}, first = false, previousrequest
         "condition": condition[1],
         "conditionavailable": conditionavailable,
         "fileavailable": fileavailable,
-        "filedata": fileddata[1]
+        "filedata": fileddata[1],
+        "raisecheckpoint":raisecheckpoint
     }
     const requiredglobalkeys = ["link", "method", "headers", "data", "storeheader",
         "storedata", "expectedstatus", "ignoreerrors", "condition",
-        "conditionavailable", "fileavailable", "filedata"];
+        "conditionavailable", "fileavailable", "filedata", "raisecheckpoint"];
     // console.log("Parsed dataobject is ", dataobject);
     if (first) {
         //This measn we also need to send the global data also 
@@ -369,13 +371,14 @@ const validatecondition = (condition) => {
         return [-1]; //measn we have no condition so lets just skip this 
     }
 
-    var { status, raiseerror, message, header, body, nextdata, overwritenextdata } = condition || null;
+    var { status, raiseerror,raisecheckpoint, message, header, body, nextdata, overwritenextdata } = condition || null;
     //Now we can actual do something to save the space like many time uses send if and nothing is attached to it
     //We can just elimate that here complety
     const types = {
         message: "string",
         condition: "string",
         raiseerror: "boolean",
+        raisecheckpoint: "boolean",
         header: "object",
         data: "object", // We read the body as data
         nextdata: "object",
