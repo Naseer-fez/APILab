@@ -2,6 +2,10 @@ import express from 'express';
 
 const seqtestendpnt = express.Router();
 
+// console.log=(data)=>{
+//     //just to make sure that the console.log is not printed in the console as it will be used to test the sequence test
+// }
+
 seqtestendpnt.use(express.json({ type: "*/*" }));
 seqtestendpnt.post("/step1", (req, res) => {
 

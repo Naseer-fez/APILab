@@ -18,6 +18,7 @@ const payload = {
             ignoreerrors: false,
             conditions: {
                 if: {
+                    raisecheckpoint: true,
                     condition: "{{response.status}} == 200",
                     status: [200],
                     raiseerror: false,
@@ -59,6 +60,7 @@ const payload = {
                 if: {
                     condition: "{{response.status}} == 200",
                     status: [200],
+                    raisecheckpoint: true,
                     raiseerror: false,
                     data: {
                         orderId: "{{response.data.orderId}}",
@@ -128,9 +130,61 @@ async function runSimulation() {
         console.error("\nERROR:", error.message);
     }
 }
+//setup the events
+const connectSSE = async (jobid = 1) => {
 
+    const response = await fetch(
+       'http://localhost:3000/api/sequencetest/events/1',
+        {
+            headers: { Accept: "text/event-stream" }
+        }
+    );
+
+    if (!response.ok || !response.body) {
+        throw new Error(`SSE connection failed: ${response.status}`);
+    }
+
+    console.log("SSE connected");
+
+    // Read SSE events continuously in the background
+    (async () => {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            const events = buffer.split("\n\n");
+            buffer = events.pop() ?? "";
+
+            for (const event of events) {
+                if (event.includes("event: checkpoint")) {
+                    const data = event
+                        .split("\n")
+                        .find(line => line.startsWith("data: "));
+
+                    if (data) {
+                        console.log("Checkpoint:", JSON.parse(data.slice(6)));
+                    }
+                }
+            }
+        }
+    })().catch(console.error);
+
+    return response;
+};
+try {
+    const events = await connectSSE(1); // Connect to SSE with jobid 1
+    console.log("SSE connection established. Listening for events...");
+} catch (error) {
+    console.error("Error connecting to SSE:", error.message);
+}
 while (true) {
-    runSimulation();
+    await runSimulation();
     //sleep for 3 sec`
-    await new Promise(resolve => setTimeout(resolve,3000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
 }
