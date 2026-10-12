@@ -3,7 +3,7 @@ import { upload } from '../middelware/uploadfile.js';
 import { sequencetestController } from '../controllers/sequencetest.js';
 import { SSEcontroller } from '../services/sequencetestsse.js';
 const sequencetestRouter = express.Router();
-
+sequencetestRouter.use(express.json({ type: "*/*" }));
 sequencetestRouter.post('/sequencetest', sequencetestController);
 
 sequencetestRouter.post('/sequencetest/file', upload.single('file'), sequencetestController);
