@@ -22,7 +22,7 @@ const concurrencetestcontroller = async (req, res) => {
     res.status(200).json({ message: "concurrency test controller", data: enginedata[1] });
 }
 
-const concurrencerequest = async ({ link, method, headers, data, bodytosend,file,isfile }) => {
+const concurrencerequest = async ({ link, method, headers, data, bodytosend,file,isfile,blobmode=false }) => {
     // now the first thing is we need one function to send one requests 
     var isget = false;
     if (method == "GET") {
@@ -39,10 +39,11 @@ const concurrencerequest = async ({ link, method, headers, data, bodytosend,file
         bodytosend: bodytosend,
         isget: isget,
         file: file,
-        isfile: isfile
+        isfile: isfile,
+        blobmode: blobmode
     }// so that we can send the data to the sendrequest function and get the response from it
     const reqdata = await requestengine({ link, method, headers,
-         bodytosend, isget,data, file, isfile });
+         bodytosend, isget,data, file, isfile ,blobmode});
     return reqdata;
     //mostly will send a list ig
 

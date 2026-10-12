@@ -1,8 +1,10 @@
-import fs from 'fs/promises';
+import { openAsBlob } from 'node:fs';
+import path from 'node:path';
+import fs from 'node:fs/promises';
 
 class concurrencyengine {
 
-    constructor({ link, method, headers, bodytosend, isget, data, file = null, isfile = 0 }) {
+    constructor({ link, method, headers, bodytosend, isget, data, file = null, isfile = 0, blobmode = false }) {
 
         this.link = link;
         this.method = method;
@@ -12,6 +14,7 @@ class concurrencyengine {
         this.data = data;
         this.file = file;
         this.isfile = isfile;
+        this.blobmode = blobmode;
         // this.beginsimulation();
     }
     // current we arent doing much with the succes data cause we are testing the 
@@ -105,9 +108,11 @@ class concurrencyengine {
                 signal: controller.signal
             }
             if (this.isfile || this.file) {
-                options = await this.filerequest(options);
+                const functionToUse = this.blobmode ? this.filerequestBLOB.bind(this) : this.filerequest.bind(this);
+
+                options = await functionToUse(options);
             } else {
-                options = this.normlarequest(options);
+                options = this.normalrequest(options);
             }
             response = await fetch(link, options);
             // clearTimeout(timeoutId);
@@ -124,7 +129,7 @@ class concurrencyengine {
             // const data = await response.json();
             // console.log("The data is ", data);
             // console.log("The response is ", response);
-            return [response.ok ,
+            return [response.ok ? 1 : 0,
                 data, response.status];
 
         } catch (error) {
@@ -152,20 +157,66 @@ class concurrencyengine {
         //conver the buffer into a blob now
         const blob = new Blob(
             [filebuffer], { type: this.file.mimetype });
-            const filekey = this.data?.filekey || "file";
+        const filekey = this.data?.filekey || "file";
         form.append(
             filekey, blob, this.file.originalname
         )
         options.body = form;
-        delete options.headers['Content-Type'];  // let node do it automatically
+        const requestHeaders = new Headers(options.headers);
+        requestHeaders.delete('content-type');
+        options.headers = requestHeaders;
         return options;
     }
-    normlarequest(options) {
+    async filerequestBLOB(options) {
+        const form = new FormData();
+
+        // Add normal body fields
+        for (const [key, value] of Object.entries(this.bodytosend ?? {})) {
+            form.append(
+                key,
+                value !== null && typeof value === 'object'
+                    ? JSON.stringify(value)
+                    : String(value ?? '')
+            );
+        }
+
+        // Support both a single file and an array of files
+        const files = Array.isArray(this.file)
+            ? this.file
+            : [this.file];
+
+        const filekey = this.data?.filekey || 'file';
+
+        for (const file of files) {
+            const blob = await openAsBlob(file.path, {
+                type: file.mimetype || 'application/octet-stream'
+            });
+
+            form.append(
+                filekey,
+                blob,
+                file.originalname || path.basename(file.path)
+            );
+        }
+
+        options.body = form;
+
+        // Let fetch generate the multipart boundary
+        const requestHeaders = new Headers(options.headers);
+        requestHeaders.delete('content-type');
+        options.headers = requestHeaders;
+
+        return options;
+    }
+
+    normalrequest(options) {
 
         if (options.method !== "GET") {
             if (this.bodytosend instanceof FormData) {
                 options.body = this.bodytosend;
-                delete options.headers['Content-Type'];  // let node do it automatically
+                const requestHeaders = new Headers(options.headers);
+                requestHeaders.delete('content-type');
+                options.headers = requestHeaders;
 
             }
             else {
@@ -183,12 +234,13 @@ class concurrencyengine {
 
 }
 
-
-const requestengine = async ({ link, method, headers, bodytosend, isget, data,file, isfile }) => {
+const requestengine = async ({ link, method, headers, bodytosend, isget, data, file, isfile, blobmode = false }) => {
     // console.log("The data is ", data);
 
-    const engine = new concurrencyengine({ link, method, headers,
-         bodytosend, isget, data,file, isfile });
+    const engine = new concurrencyengine({
+        link, method, headers,
+        bodytosend, isget, data, file, isfile, blobmode
+    });
     // console.log("The engine is ", engine);
     const result = await engine.beginsimulation();
     console.log("The result is ", result);

@@ -45,6 +45,7 @@ data
 The idea rigth now is to send 2 diffrent types of data
 One is the basic data that will be used to send the request to the server the basic info 
 Second is the config for use to decide how to send the data is to be sent to the server
+If you need  dont want the whole file to be allocated in the ram then you can use the option blobmode :true and it will use the blob to send the file to the server
 
 */
 
