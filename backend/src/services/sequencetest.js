@@ -51,6 +51,8 @@ const parsebody = async (body, file, global = {}, first = false, previousrequest
     var expectedstatus = body.expectedstatus ?? global.expectedstatus ?? 200; //if not provided then it will be 200
     var raisecheckpoint = body.raisecheckpoint ?? global.raisecheckpoint ?? false;
     var ignoreerrors = body.ignoreerrors ?? global.ignoreerrors ?? false;
+    var bodykey = body.bodykey  ?? "body"; //if not provided then it will be body
+    var filekey = body.filekey  ?? "file"; //if not provided then it will be file
     //Now after this the only thing remains is the Condition part whihc will deal will all the conditions that is to be followed
     var condition = conditionparser(body.conditions ?? null, body.conditionavailble ?? false);
     if (condition[0] == 0) {
@@ -78,11 +80,13 @@ const parsebody = async (body, file, global = {}, first = false, previousrequest
         "conditionavailable": conditionavailable,
         "fileavailable": fileavailable,
         "filedata": fileddata[1],
-        "raisecheckpoint":raisecheckpoint
+        "raisecheckpoint":raisecheckpoint,
+        "bodykey": bodykey,
+        "filekey": filekey
     }
     const requiredglobalkeys = ["link", "method", "headers", "data", "storeheader",
         "storedata", "expectedstatus", "ignoreerrors", "condition",
-        "conditionavailable", "fileavailable", "filedata", "raisecheckpoint"];
+        "conditionavailable", "fileavailable", "filedata", "raisecheckpoint", "bodykey", "filekey"];
     // console.log("Parsed dataobject is ", dataobject);
     if (first) {
         //This measn we also need to send the global data also 

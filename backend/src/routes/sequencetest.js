@@ -60,6 +60,9 @@ A file path will be taken from the data if provided or else the file upload dire
 //If the file is uploded and the paths are provided then the file will use the uploaded file and the path will be ignored unless the keys are same
 
 }
+"bodykey":"body" 
+"filekey":"file" 
+Both the above are the keys that are set in the Server for the data , the defualt is body and file
 
 
 //second request now 
@@ -69,10 +72,8 @@ If the previous request stores the data then the defult option will be placed he
 
 {
 //basic things
-"storeheader":false.
-"useheader":true,
+"storeheader":true,
 "storedata":false, 
-"usedata":true,
 "expectedstatus":200,
 "ignoreerros":false,
 "filepath":"", //This is the path to the file that is to be sent to the server
@@ -113,13 +114,11 @@ condition:{
 "header":{
 "auth":"bearer {{header.auth}}"
 //here the system will automatically add the auth to the header
-"toremoveheaders":[] 
-//This will remove all the heders in the list ,
-//if this is set to -1 then all the heders will be removed except the presnt header from the data 
+
 }
 "data":{
 "somekey":"{{data.somekey}}"
-"toremovedata":[] //This will remove all the body in the list ,
+
 
 
 }

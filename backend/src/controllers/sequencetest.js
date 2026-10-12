@@ -3,6 +3,8 @@ import WebSocket from 'ws';
 import fs from 'fs';
 import { log } from '../utils/logger.js';
 import { sendtheevent } from '../services/sequencetestsse.js';
+import { openAsBlob } from 'node:fs';
+import path from 'node:path';
 
 
 
@@ -53,14 +55,14 @@ const sequencetestController = async (req, res) => {
     const finalresult = await handelrequests(totalrequestsdata, globaldata, res, req); //We will send the parsed body to the handelrequests function
     return res.status(finalresult[2]).json(finalresult[1]); //We can diraclty send the response we will validate that in the function itself    
 }
-const sendrequest = async ({ link, method, headers, data = {}, filedata = null, fileavailable = false }) => {
+const sendrequest = async ({ link, method, headers, data = {}, filedata = null, fileavailable = false, bodykey = "body", filekey = "file" }) => {
     //This is the basic function which will be used to send the request to the other server
     //casue we have parsed everything we can direcly perfrom the tasks
     // console.log("Sending request to link:", link, "with method:", method, "and headers:", headers, "and data:", data, "and file:", file, "and fileavailable:", fileavailable);
     // log(`Sending request to link: ${link} with method: ${method} and headers: ${JSON.stringify(headers)} and data: ${JSON.stringify(data)} and file available: ${fileavailable}`, 'info', 'sequencetest.log');
     //    log("The link is",link)
     if (fileavailable) {
-        return await sendfile(link, method, headers, filedata);
+        return await sendfile(link, method, headers, filedata, filekey);
     } //Simple abstraction
     link = (() => {
         if (method === 'GET') {
@@ -83,7 +85,7 @@ const sendrequest = async ({ link, method, headers, data = {}, filedata = null, 
         result = await fetch(link, {
             method: method,
             headers: headers,
-            body: JSON.stringify(data)
+            body: JSON.stringify({ [bodykey]: data })
         });
     }
     // console.log("The data sent is ", data);
@@ -107,26 +109,62 @@ const sendrequest = async ({ link, method, headers, data = {}, filedata = null, 
     ];
 
 }
-const sendfile = async (link, method, headers, filedata) => {
-    const stream = fs.createReadStream(filedata.path);
+
+const sendfile = async (link, method, headers, filedata, filekey = "file") => {
+    const filedataArray = Array.isArray(filedata) ? filedata : [filedata];
     try {
+        const form = new FormData();
+
+        for (const file of filedataArray) {
+            const blob = await openAsBlob(file.path, {
+                type: file.mimetype || "application/octet-stream"
+            });
+
+            form.append(
+                filekey,
+                blob,
+                file.originalname || path.basename(file.path)
+            );
+        }
+
+        const requestHeaders = new Headers(headers);
+        requestHeaders.delete("Content-Type");
+
         const response = await fetch(link, {
-            method: method,
-            headers: headers,
-            body: stream,
-            duplex: 'half'
+            method,
+            headers: requestHeaders,
+            body: form
         });
-        return [1, { status: response.status, data: await response.json() }, response.status];
-    }
-    catch (error) {
-        return [0, { message: 'Error in sending the request', error: error.message }, 500];
-    }
-    finally {
-        stream.destroy();
-    }
 
+        const text = await response.text();
+        let data;
 
-}
+        try {
+            data = JSON.parse(text);
+        } catch {
+            data = text;
+        }
+
+        return [
+            response.ok ? 1 : 0,
+            {
+                status: response.status,
+                data,
+                headers: Object.fromEntries(response.headers.entries())
+            },
+            response.status
+        ];
+    } catch (error) {
+        return [
+            0,
+            {
+                message: "Error in sending the request",
+                error: error.message
+            },
+            500
+        ];
+    }
+};
 const handelrequests = async (body, globaldata, res = null, req = null) => {
     //We have the body
     //First pick the data and send it Cause this is a list we can easily iterate over that
@@ -145,16 +183,16 @@ const handelrequests = async (body, globaldata, res = null, req = null) => {
     for (let i = 0; i < body.length; i++) {
 
         const originalrequest = body[i];
-        const request = await resolvedata(originalrequest, previousrequest);
+        const request = await resolvedata(originalrequest, previousrequest, globaldata);
 
         // console.log("Resolved request for request number ", i + 1, ":", request);
         const response = await sendrequest(request);
-        if (response[0] === 0) {
-            return response; //If the request failed we will return the error
-        }
+        // if (response[0] === 0) {
+        //     return response; //If the request failed we will return the error
+        // }
         globalresponse.response[i] = response[1]; //We will store the response in the globalresponse object
         const conditionresult = conditionschecker(originalrequest.condition
-            , response[1]);
+            , response[1], response[0] === 0);
 
         if (conditionresult[0] === 0) {
             console.log("HIIIIIIII");
@@ -163,7 +201,7 @@ const handelrequests = async (body, globaldata, res = null, req = null) => {
                 conditionmessage: conditionresult[1],
                 conditionresult: conditionresult
             }, 400];
-        } else if (conditionresult[0] === -2) {
+        } else if (conditionresult[0] < 0) {
             //This is like a checkpoint to rasie
             const message = conditionresult[1];
             const result = handelcheckpoint(message, [globalresponse, finalresult, originalrequest], res, req);
@@ -177,6 +215,10 @@ const handelrequests = async (body, globaldata, res = null, req = null) => {
             response: response[1],
             conditionresult: conditionresult
         });
+        // console.log("The current request is :", originalrequest); 
+        // Lets remove the keys now the keys which the users want us to remove
+
+        // console.log("The current request after removing the keys is :", originalrequest);
         // console.log("Condition result for request number ", i + 1, ":", conditionresult[1]);
         if (conditionresult[1]?.nextdataavailable || conditionresult[1]?.nextheaderavailable) {
             Object.assign(originalrequest, conditionresult[1]);
@@ -190,7 +232,7 @@ const handelrequests = async (body, globaldata, res = null, req = null) => {
 
 
 }
-const conditionschecker = (conditiondata, response,error) => {
+const conditionschecker = (conditiondata, response, error = false) => {
     if (conditiondata === undefined || conditiondata === null) {
         return [1, {}, 200] //Nothing to check 
     }
@@ -203,16 +245,25 @@ const conditionschecker = (conditiondata, response,error) => {
         if (Object.hasOwn(conditiondata, key)) {
             for (const condition of conditiondata[key]) {
                 const result = conditionvalidator(condition, response);
-                
+
                 //with this we can easily go though all the condition easily
                 // console.log("Condition result for condition ", condition, ":", result);
                 if (result[0] === 1) {
                     // console.log("Condition met for condition ", condition, ":", result[1]);
                     // var returnval = condition.raiseerror ? -2 : 1
                     const returnval = () => {
-                        const { raiseerror, raisecheckpoint } = condition;
-                        console.log("raiseerror:", raiseerror, "raisecheckpoint:", raisecheckpoint);
-                        return raisecheckpoint || raiseerror ? -2 : 1;
+                        const { raiseerror, raisecheckpoint, ignoreerror } = condition;
+                        console.log("raiseerror:", raiseerror, "raisecheckpoint:", raisecheckpoint, "ignoreerror:", ignoreerror);
+                        // return raisecheckpoint || raiseerror ? -2 : 1; //so either send , -1 , -2 or 1
+                        //1 is for no checkpoint , -2 is for the rasise checkpoint and -1 is for the rasise error
+                        if (raiseerror && ignoreerror) return -1; //This is for the rasise error  but to continue the execution
+                        else if (!ignoreerror && error) return 0;
+                        else if (raisecheckpoint) return -2; //This is for the rasise checkpoint
+
+
+                        return 1; //This is for the no checkpoint
+
+                        //Thinking is that to either continue the process or to end the process at this point 
                     };
                     var chgdata = changedata(condition, response, {});
                     if (chgdata[0] == 0) { return [chgdata[0], chgdata[1], 400] };
@@ -283,7 +334,7 @@ const resolvevalue = (value, source) => {
     });
 }
 
-const resolvedata = async (request, previousrequest = {}) => {
+const resolvedata = async (request, previousrequest = {}, globaldata = {}) => {
     /*So this function first reads the data  and ready the data to the next request
     So based on the previous request we will alter the data in this 
     the assumuption is that only succuessful request will be sent to the next request so
@@ -291,15 +342,26 @@ const resolvedata = async (request, previousrequest = {}) => {
     so in this fucntion i will get the current data and then the previous data 
     I need to look in the previous data and then reqite the current data*/
     // return request; //This is a test function to check if the data is resolved or not
+    // console.log("The previous request is :", previousrequest);
+    // console.log("The current request is :", request);
 
     if (!previousrequest ||
         typeof previousrequest !== 'object' ||
         Array.isArray(previousrequest)) {
         return request; //If there is no nextrequest we will return the current request
     }//measn it is the first request so we can leave that here itslef
+    const {
+        storeheader = globaldata.storeheader,
+        storedata = globaldata.storedata
+    } = request; //only for undefined
 
-    const hasnextdata = previousrequest.nextdataavailable ?? false;
-    const hasnextheader = previousrequest.nextheaderavailable ?? false;
+    var hasnextdata = previousrequest.nextdataavailable ?? false;
+    if (storedata === false) hasnextdata = false; //If the storedata is false then we will not use the nextdata
+
+
+    var hasnextheader = previousrequest.nextheaderavailable ?? false;
+    if (storeheader === false) hasnextheader = false; //If the storeheader is false then we will not use the nextdata
+
 
     if (!hasnextdata && !hasnextheader) {
         return request; //If there is no nextdata or nextheader we will return the current request
@@ -347,10 +409,13 @@ const handelcheckpoint = (message, completedata, res, req) => {
     //we have open a websocket connection and send the message to the client and wait for the response
     //Hard coded this function
     //lets use serverside events to send the message to the client and wait for the response
-    console.log("Sending checkpoint message to the client:", message);
+    // console.log("Sending checkpoint message to the client:", message);
+
+    //shouldve direcly called that in the function itslef, but this gives use proper abstraction and we can easily change the implementation later on
+
     const value = sendtheevent(req.query.jobid ?? 1, { message: message, data: completedata }, "checkpoint");
     //no need to await lets do the rest of the work 
-    console.log("Checkpoint message sent to the client:", message, "with result:", value);
+    // console.log("Checkpoint message sent to the client:", message, "with result:", value);
     return value;
 
 }
@@ -486,7 +551,7 @@ const conditionvalidator = (condition, response, onlydata = false) => {
 
 }
 const normalizeValue = (left, right) => {
-    return [1, [left, right]]; //later on 
+    return [1, [left, right]]; //later on  , can be used to create , response as resp, can add the fuzzy matching like system 
 }
 const objscreation = (value, alldatavalues) => {
     //Will get the object path from the value and return the value from the response object
@@ -524,15 +589,15 @@ const objscreation = (value, alldatavalues) => {
 const changedata = (condition, response, nextrequest = {}) => {
     /*
         This function runs after a condition has successfully passed.
-
+ 
         Its job is to prepare information for the NEXT request.
-
+ 
         Possible changes:
         1. Prepare headers for the next request
         2. Prepare body data for the next request
         3. Prepare explicit nextdata
         4. Set overwrite behaviour
-
+ 
         The actual merging/overwriting is handled later by resolvedata().
     */
 
@@ -622,5 +687,8 @@ const changedata = (condition, response, nextrequest = {}) => {
 
     return [1, result, 200];
 };
+
+
+
 
 export { sequencetestController };
