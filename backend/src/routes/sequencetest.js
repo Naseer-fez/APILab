@@ -3,7 +3,7 @@ import { upload } from '../middelware/uploadfile.js';
 import { sequencetestController } from '../controllers/sequencetest.js';
 import { SSEcontroller } from '../services/sequencetestsse.js';
 const sequencetestRouter = express.Router();
-sequencetestRouter.use(express.json({ type: "*/*" }));
+// sequencetestRouter.use(express.json({ type: "*/*" }));
 sequencetestRouter.post('/sequencetest', sequencetestController);
 
 sequencetestRouter.post('/sequencetest/file', upload.single('file'), sequencetestController);
@@ -123,8 +123,7 @@ condition:{
 
 }
 "nextdata":{} You can also set the data in the present request for the next request
-"overwritenextdata":true //This is used to overwrite the data in the next request if this is set to false then the data will be merged with the next request data
-},
+"overwritenextdata":true //This is used to overwrite the data in the next request
 "elseif":{
 //same above data
 
