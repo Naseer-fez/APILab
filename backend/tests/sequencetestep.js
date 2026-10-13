@@ -2,16 +2,16 @@ import express from 'express';
 
 const seqtestendpnt = express.Router();
 
-// console.log=(data)=>{
-//     //just to make sure that the console.log is not printed in the console as it will be used to test the sequence test
+// //console.log=(data)=>{
+//     //just to make sure that the //console.log is not printed in the //console as it will be used to test the sequence test
 // }
 
 seqtestendpnt.use(express.json({ type: "*/*" }));
 seqtestendpnt.post("/step1", (req, res) => {
 
-    console.log("\n================ STEP 1 ================");
-    console.log("Body received:", req.body);
-    console.log("Headers received:", req.headers);
+    //console.log("\n================ STEP 1 ================");
+    //console.log("Body received:", req.body);
+    //console.log("Headers received:", req.headers);
 
     res.status(200).json({
         step: 1,
@@ -27,9 +27,9 @@ seqtestendpnt.post("/step1", (req, res) => {
 
 seqtestendpnt.post("/step2", (req, res) => {
 
-    console.log("\n================ STEP 2 ================");
-    console.log("Body received:", req.body);
-    console.log("Headers received:", req.headers);
+    //console.log("\n================ STEP 2 ================");
+    //console.log("Body received:", req.body);
+    //console.log("Headers received:", req.headers);
 
     const bodyCorrect =
         req.body?.userId === 101 &&
@@ -69,8 +69,19 @@ seqtestendpnt.post("/step2", (req, res) => {
             }
         });
     }
+    //console.log("The expected and the recived body:")
+    //lets check if both are same or not
+    if (JSON.stringify({
+        userId: 101,
+        userName: "Naseer",
+        token: "abc123"
+    }) === JSON.stringify(req.body)) {
+        //console.log("The expected and the received body are the same.");
+    } else {
+        //console.log("The expected and the received body are different.");
+    }
 
-    console.log("STEP 2 BODY + HEADER VALIDATION PASSED");
+    //console.log("STEP 2 BODY + HEADER VALIDATION PASSED");
 
     res.status(200).json({
         step: 2,
@@ -84,9 +95,9 @@ seqtestendpnt.post("/step2", (req, res) => {
 
 seqtestendpnt.post("/step3", (req, res) => {
 
-    console.log("\n================ STEP 3 ================");
-    console.log("Body received:", req.body);
-    console.log("Headers received:", req.headers);
+    //console.log("\n================ STEP 3 ================");
+    //console.log("Body received:", req.body);
+    //console.log("Headers received:", req.headers);
 
     const bodyCorrect =
         req.body?.orderId === 9876 &&
@@ -122,7 +133,7 @@ seqtestendpnt.post("/step3", (req, res) => {
         });
     }
 
-    console.log("STEP 3 BODY + HEADER VALIDATION PASSED");
+    //console.log("STEP 3 BODY + HEADER VALIDATION PASSED");
 
     res.status(200).json({
         success: true,

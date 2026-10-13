@@ -55,7 +55,7 @@ const sequencetestController = async (req, res) => {
     const finalresult = await handelrequests(totalrequestsdata, globaldata, res, req); //We will send the parsed body to the handelrequests function
     return res.status(finalresult[2]).json(finalresult[1]); //We can diraclty send the response we will validate that in the function itself    
 }
-const sendrequest = async ({ link, method, headers, data = {}, filedata = null, fileavailable = false, bodykey = "body", filekey = "file" }) => {
+const sendrequest = async ({ link, method, headers, data = {}, filedata = null, fileavailable = false, filekey = "file" }) => {
     //This is the basic function which will be used to send the request to the other server
     //casue we have parsed everything we can direcly perfrom the tasks
     // console.log("Sending request to link:", link, "with method:", method, "and headers:", headers, "and data:", data, "and file:", file, "and fileavailable:", fileavailable);
@@ -85,7 +85,7 @@ const sendrequest = async ({ link, method, headers, data = {}, filedata = null, 
         result = await fetch(link, {
             method: method,
             headers: headers,
-            body: JSON.stringify({ [bodykey]: data })
+            body: JSON.stringify(data)
         });
     }
     // console.log("The data sent is ", data);
@@ -228,7 +228,7 @@ const handelrequests = async (body, globaldata, res = null, req = null) => {
         }
     }
 
-    return [1, finalresult, 200];
+    return resultparser(finalresult); //We will return the final result after parsing it
 
 
 }
@@ -687,6 +687,11 @@ const changedata = (condition, response, nextrequest = {}) => {
 
     return [1, result, 200];
 };
+
+const resultparser = (result) => {
+    console.log("The final result is :", result);
+    return  [1, result,200]; //test
+}
 
 
 
