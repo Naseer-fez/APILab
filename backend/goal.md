@@ -1,9 +1,13 @@
-## Next goal
-#### <b>
-Chained Requests</b>
-Right now if i test one endpoint i will only get the strength of the API , which any while loop request module can. <br>I need to create a system 
-which when it send  a request and the server sends a result it can eaisly validate and send another request to another API , forming a complete chain
+## Next goals
 ___
-#### <b> Adding Analyatics for both the tests</b>
-Right now both the systems are just collecting data , i need to create a system so that this data will not just be some numbers but will add value to the users so that they can understand their API properly.
+### <b>A common Result parser</b>
 ___
+Right now All 3 enpoints have very basic Result configration , becasue of which the frontend is gonna suffer masively for handling all the results with all 3 diffrent enpoints.<br>
+<b>Process:</b>Build a proper normalizer for all 3 enpoints and the keep a simple Result engine which will parse the result 
+____
+### <b>Frontend/CLI</b>
+___
+A simple developer friendly frontend for analysing the results and perfroming the operations.<br>
+Also To add the CLI option
+___
+
