@@ -26,7 +26,7 @@ const parsebody = async (body, file = null) => {
 
 
 
-    var { link, endpoint, endpointavailable, method, headers, data, bodytosend,blobmode } = body;
+    var { link, endpoint, endpointavailable, method, headers, data, bodytosend, blobmode } = body;
     blobmode = blobmode || false; // default value is false
     link = extractlink({ link, endpoint, endpointavailable });
     if (link[0] === 0) {
@@ -88,8 +88,7 @@ const parsebody = async (body, file = null) => {
     }
     // finaldata.blobmode = blobmode; // add the blobmode property to the finaldata object
 
-    console.log("The final data is ", finaldata);
-    console.log("The final data is ", finaldata);
+
     return [1, finaldata, 200];
 
 }

@@ -1,6 +1,9 @@
 import { openAsBlob } from 'node:fs';
 import path from 'node:path';
 import fs from 'node:fs/promises';
+// import { startlatency, endlatency, calculatelatencymetric, datacalulator,getdatasize } from './resultsmetric.js';
+import { resultmetric } from './resultsmetric.js';
+
 
 class concurrencyengine {
 
@@ -29,32 +32,62 @@ class concurrencyengine {
             totalrequestssent: 0,
             concurrentrequest: 0,
             successfulrequests: 0,
-            totalrequestfailed: 0
+            totalrequestfailed: 0,
+            data: {
+                sent: 0,
+                received: 0
+            }
 
         }
         let currentConcurrency = this.data.concurency;
+        var requestcyclenum = 1;
         while (totaldata.totalrequestssent < this.data.requests) {
-            console.log("Request no:", totaldata.totalrequestssent);
+            //console.log("Request no:", totaldata.totalrequestssent);
             //now we will send the concurrent requests
+            const id = "id" + totaldata.totalrequestssent;
+
             const reaminingrequests = this.data.requests -
                 totaldata.totalrequestssent;
             const batchsize = Math.min(currentConcurrency, reaminingrequests);
             totaldata.concurrentrequest = batchsize;
-            // console.log("The total requests sent is ", totaldata.totalrequestssent, "Total data is", this.data.requests);
+            const cycleStartSent = totaldata.totalrequestssent;
+            const cycleStartSuccess = totaldata.successfulrequests;
+            const cycleStartFailed = totaldata.totalrequestfailed;
+            // //console.log("The total requests sent is ", totaldata.totalrequestssent, "Total data is", this.data.requests);
+            resultmetric.startlatency(id);
             totaldata = await this.concurrentsendrequest({ totaldata: totaldata });
+            resultmetric.endlatency(id);
             // totaldata.concurrentrequest += this.data.concurency;
-            // console.log("The total requests sent is ", totaldata.completedrequest + totaldata.totalrequestfailed);
+            // //console.log("The total requests sent is ", totaldata.completedrequest + totaldata.totalrequestfailed);
+            totaldata.requestcycle ??= {};
+
+            totaldata.requestcycle[`requestcycle${requestcyclenum}`] = {
+                requestcyclenum,
+                batchsize,
+                currentConcurrency,
+                totalrequestssent:
+                    totaldata.totalrequestssent - cycleStartSent,
+                successfulrequests:
+                    totaldata.successfulrequests - cycleStartSuccess,
+                totalrequestfailed:
+                    totaldata.totalrequestfailed - cycleStartFailed
+            };
             currentConcurrency += (this.data.increment || 0);
             await this.sleep(this.data.interval);
+            requestcyclenum++;
             //to simulate the time interval between the requests
 
         }
-        // console.log("The total data is ", totaldata);
-
+        // //console.log("The total data is ", totaldata);
+        //cause sent is just a multplication
         //tiem to send the request now
-        console.log("Simulation is done!");
-        return totaldata;
+        //console.log("Simulation is done!");
+        totaldata.data ??= {};
+        totaldata = resultmetric.combineresults(totaldata);
 
+        // totaldata.data.sent =
+        //     totaldata.totalrequestssent *
+        //     await resultmetric.getdatasize(this.bodytosend);
     }
     async concurrentsendrequest({ totaldata }) {
         // const link = this.link;
@@ -66,8 +99,9 @@ class concurrencyengine {
         var requestsent = 0;
         const reqs = []
         while (requestsent < totaldata.concurrentrequest) {
-            console.log("Request of sending no:", requestsent + 1, "of", totaldata.concurrentrequest);
             requestsent++;
+            const id = requestsent;
+            resultmetric.startlatency(id);
             reqs.push(this.sendrequest()
                 .then((data) => {
                     if (data[0] === 1) {
@@ -77,11 +111,18 @@ class concurrencyengine {
                         totaldata.totalrequestfailed += 1;
                     }
                     totaldata.totalrequestssent += 1;
+                    resultmetric.datacalulator("con", data[1], true);
                 }).catch((err) => {
-                    console.log("The error is ", err);
+                    //console.log("The error is ", err);
                     totaldata.totalrequestfailed += 1;
                     totaldata.totalrequestssent += 1;
-                }));
+                }).finally(() => {
+                    // //console.log("Request of sending no:", requestsent, "of", totaldata.concurrentrequest, "is done");
+                    resultmetric.endlatency(id);
+                    // resultmetric.datacalulator(id, data[1], true);
+                }
+                )
+            );
         }
         await Promise.all(reqs)
         return totaldata;
@@ -95,7 +136,7 @@ class concurrencyengine {
         const bodytosend = this.bodytosend;
         const controller = new AbortController();
 
-        // console.log("The link is ", link);
+        // //console.log("The link is ", link);
         var response;
         const timeoutMs = Number(this.data?.timeout ?? this.data?.timout ?? 5000);
         const timeoutId = setTimeout(() => {
@@ -127,8 +168,8 @@ class concurrencyengine {
             }
             clearTimeout(timeoutId);
             // const data = await response.json();
-            // console.log("The data is ", data);
-            // console.log("The response is ", response);
+            // //console.log("The data is ", data);
+            // //console.log("The response is ", response);
             return [response.ok ? 1 : 0,
                 data, response.status];
 
@@ -138,7 +179,7 @@ class concurrencyengine {
             }
 
             clearTimeout(timeoutId);
-            console.error("Error sending request:", error);
+            //console.error("Error sending request:", error);
             return [0, error.message, 500];
 
 
@@ -209,7 +250,7 @@ class concurrencyengine {
         return options;
     }
 
-    normalrequest(options) {
+    async normalrequest(options) {
 
         if (options.method !== "GET") {
             if (this.bodytosend instanceof FormData) {
@@ -235,16 +276,15 @@ class concurrencyengine {
 }
 
 const requestengine = async ({ link, method, headers, bodytosend, isget, data, file, isfile, blobmode = false }) => {
-    // console.log("The data is ", data);
+    // //console.log("The data is ", data);
 
     const engine = new concurrencyengine({
         link, method, headers,
         bodytosend, isget, data, file, isfile, blobmode
     });
-    // console.log("The engine is ", engine);
+    // //console.log("The engine is ", engine);
     const result = await engine.beginsimulation();
     console.log("The result is ", result);
-
 
 
     return [1, "Request sent successfully", 200];

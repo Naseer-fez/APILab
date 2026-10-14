@@ -18,7 +18,6 @@ const concurrencetestcontroller = async (req, res) => {
     if (enginedata[0] === 0) {
         return res.status(enginedata[2]).json({ message: enginedata[1] });
     }
-
     res.status(200).json({ message: "concurrency test controller", data: enginedata[1] });
 }
 
