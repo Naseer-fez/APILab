@@ -6,22 +6,25 @@ const LatencyMap = new Map();//This will store the latency for each id
 
 const DataMap = new Map();//This will store the data for each id
 
+const ResultMap = new Map();//This will store the result for each id
 
-const startlatency = async (id) => {
-    if (!id) {
-        throw new Error("id is required"); //This is for the backedn 
+const diagnosticsMap = new Map();//This will store the diagnostics for each id
+
+const startlatency = async (reqindex) => {
+    if (!reqindex) {
+        throw new Error("reqindex is required"); //This is for the backedn 
     }
-    if (LatencyMap.has(id)) return; //If the id is already present then return
-    LatencyMap.set(id, { start: Date.now() }); //This will store the start time for the id
+    if (LatencyMap.has(reqindex)) return; //If the id is already present then return
+    LatencyMap.set(reqindex, { start: Date.now() }); //This will store the start time for the id
 
 }
 
-const endlatency = async (id) => {
-    if (!id) {
-        throw new Error("id is required");
+const endlatency = async (reqindex) => {
+    if (!reqindex) {
+        throw new Error("reqindex is required");
     }
-    if (!LatencyMap.has(id)) return; //If the id is not present then return
-    const latency = LatencyMap.get(id);
+    if (!LatencyMap.has(reqindex)) return; //If the id is not present then return
+    const latency = LatencyMap.get(reqindex);
     if (!latency) return;
     latency.end = Date.now();
     latency.duration = Number((latency.end - latency.start).toFixed(6));
@@ -47,8 +50,8 @@ const calculatelatencymetric = async () => {
         p99: null
     };
 
-    durations.sort((a, b) => a - b);
     if (durations.length === 0) return totalmetric;
+    durations.sort((a, b) => a - b);
 
     const percentile = (num) => {
         const index = Math.ceil((num / 100) * durations.length) - 1;
@@ -88,6 +91,54 @@ const datacalulator = async (id = "default", data, received = false) => {
 
 }
 
+const storeresult = async (id = "default", result) => {
+    if (!id) {
+        throw new Error("id is required");
+    }
+    if (!ResultMap.has(id)) {
+        ResultMap.set(id, []); // Dr.Strange:  "It's a simple spell, but quite unbreakable"
+    }
+    ResultMap.get(id).push(result);
+}
+
+
+
+const summaryreport = async (id = "default", totaldata) => {
+    if (!id) {
+        throw new Error("id is required");
+    }
+
+    const results = ResultMap.get(id) ?? [];
+
+    let successful = 0;
+    let failed = 0;
+
+    for (const result of results) {
+        if (result.status >= 200 && result.status < 300) {
+            successful++;
+        } else {
+            failed++;
+        }
+    }
+
+    const total = results.length;
+
+    const summary = {
+        totalRequestsSent: total,
+        successfulRequests: successful,
+        totalRequestsFailed: failed,
+        successRate: total
+            ? Number(((successful / total) * 100).toFixed(2))
+            : 0,
+
+        failureRate: total
+            ? Number(((failed / total) * 100).toFixed(2))
+            : 0
+    };
+
+    return summary;
+};
+
 
 
 const getdatasize = async (data) => {
@@ -104,29 +155,37 @@ const getdatasize = async (data) => {
 }
 
 
-const combineresults = async (totaldata, key = "con") => {
+const combineresults = async (totaldata, key = "default") => {
     totaldata.latency = await calculatelatencymetric();
-    totaldata.data ??= {};
-    totaldata.data.received = DataMap.get(key)?.received ?? 0;
-    console.log("the totaldata is ", totaldata);
+    totaldata.dataprocessed ??= {};
+    totaldata.dataprocessed.sent = DataMap.get(key)?.sent ?? 0;
+    totaldata.dataprocessed.received = DataMap.get(key)?.received ?? 0;
+    totaldata.result = ResultMap.get(key) ?? []; //full array
+    totaldata.diagnostics = diagnosticsMap.get(key) ?? []; //full array 
+    totaldata.summary ??= await summaryreport(key, totaldata);
+    // console.log("all the keys are ", Object.keys(totaldata));
     return totaldata;
 }
 
+const storediagnostics = async (id = "default", diagnostics) => {
+    if (!id) {
+        throw new Error("id is required");
+    }
+    if (!diagnosticsMap.has(id)) {
+        diagnosticsMap.set(id, []);
+    }
+    diagnosticsMap.get(id).push(diagnostics);
 
-
-import { pathToFileURL } from "node:url";
-
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-    startlatency("test");
-    endlatency("test").then(() => {
-        const latency = LatencyMap.get("test");
-        console.log(latency);
-    });
 }
+
+
+
+
 const resultmetric = {
     startlatency,
     endlatency, calculatelatencymetric,
-    datacalulator, getdatasize, combineresults
+    storediagnostics,
+    datacalulator, getdatasize, combineresults, storeresult
 }
 
 export {
