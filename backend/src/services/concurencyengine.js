@@ -1,9 +1,9 @@
 import { openAsBlob } from 'node:fs';
 import path from 'node:path';
 import fs from 'node:fs/promises';
-// import { startlatency, endlatency, calculatelatencymetric, datacalulator,getdatasize } from './resultsmetric.js';
 import { resultmetric } from './resultsmetric.js';
 
+const resultid="concurrency_test"; //This is the id for the result metric to store the results in the result metric service
 
 class concurrencyengine {
 
@@ -54,9 +54,9 @@ class concurrencyengine {
             const cycleStartSuccess = totaldata.successfulrequests;
             const cycleStartFailed = totaldata.totalrequestfailed;
             // //console.log("The total requests sent is ", totaldata.totalrequestssent, "Total data is", this.data.requests);
-            resultmetric.startlatency(id);
+            resultmetric.startlatency(resultid, id);
             totaldata = await this.concurrentsendrequest({ totaldata: totaldata });
-            resultmetric.endlatency(id);
+            resultmetric.endlatency(resultid, id);
             // totaldata.concurrentrequest += this.data.concurency;
             // //console.log("The total requests sent is ", totaldata.completedrequest + totaldata.totalrequestfailed);
             totaldata.requestcycle ??= {};
@@ -73,7 +73,7 @@ class concurrencyengine {
                     totaldata.totalrequestfailed - cycleStartFailed
             };
             currentConcurrency += (this.data.increment || 0);
-            await this.sleep(this.data.interval);
+            await this.sleep(this.data.interval ?? 0); //if thta is not fount then zero
             requestcyclenum++;
             //to simulate the time interval between the requests
 
@@ -82,12 +82,14 @@ class concurrencyengine {
         //cause sent is just a multplication
         //tiem to send the request now
         //console.log("Simulation is done!");
-        totaldata.data ??= {};
-        totaldata = resultmetric.combineresults(totaldata);
-
-        // totaldata.data.sent =
-        //     totaldata.totalrequestssent *
-        //     await resultmetric.getdatasize(this.bodytosend);
+        totaldata.dataprocessed ??= {};
+        if (this.method !== "GET") {
+            totaldata.dataprocessed.sent =
+                totaldata.totalrequestssent *
+                await resultmetric.getdatasize(this.bodytosend);
+        }
+        totaldata = resultmetric.combineresults(resultid, totaldata); 
+        return totaldata;
     }
     async concurrentsendrequest({ totaldata }) {
         // const link = this.link;
@@ -101,7 +103,7 @@ class concurrencyengine {
         while (requestsent < totaldata.concurrentrequest) {
             requestsent++;
             const id = requestsent;
-            resultmetric.startlatency(id);
+            resultmetric.startlatency(resultid, id);
             reqs.push(this.sendrequest()
                 .then((data) => {
                     if (data[0] === 1) {
@@ -109,16 +111,17 @@ class concurrencyengine {
 
                     } else {
                         totaldata.totalrequestfailed += 1;
+                        resultmetric.storediagnostics(resultid, { status: data[0], data: data[1] }); //this will do it
                     }
                     totaldata.totalrequestssent += 1;
-                    resultmetric.datacalulator("con", data[1], true);
+                    resultmetric.datacalulator(resultid, data[1], true);
                 }).catch((err) => {
                     //console.log("The error is ", err);
                     totaldata.totalrequestfailed += 1;
                     totaldata.totalrequestssent += 1;
                 }).finally(() => {
                     // //console.log("Request of sending no:", requestsent, "of", totaldata.concurrentrequest, "is done");
-                    resultmetric.endlatency(id);
+                    resultmetric.endlatency(resultid, id);
                     // resultmetric.datacalulator(id, data[1], true);
                 }
                 )
@@ -146,6 +149,7 @@ class concurrencyengine {
             var options = {
                 method: method,
                 headers: headers,
+                body: bodytosend,
                 signal: controller.signal
             }
             if (this.isfile || this.file) {
@@ -153,7 +157,7 @@ class concurrencyengine {
 
                 options = await functionToUse(options);
             } else {
-                options = this.normalrequest(options);
+                options = await this.normalrequest(options);
             }
             response = await fetch(link, options);
             // clearTimeout(timeoutId);
@@ -161,12 +165,12 @@ class concurrencyengine {
             let data = null;
             const contentType = response.headers.get("content-type");
             // will work on this data later on
-            if (contentType && contentType.includes("application/json")) {
-                data = await response.json();
-            } else {
-                data = await response.text();
-            }
+            const fun = contentType?.includes("application/json") ? "json" : "text";
+            data = await response[fun]();
+
+
             clearTimeout(timeoutId);
+            resultmetric.storeresult(resultid, { status: response.status, data: data, headers: Object.fromEntries(response.headers.entries()) }); //async fun
             // const data = await response.json();
             // //console.log("The data is ", data);
             // //console.log("The response is ", response);
@@ -251,21 +255,26 @@ class concurrencyengine {
     }
 
     async normalrequest(options) {
+    if (options.method.toUpperCase() !== "GET") {
+        if (this.bodytosend instanceof FormData) {
+            options.body = this.bodytosend;
 
-        if (options.method !== "GET") {
-            if (this.bodytosend instanceof FormData) {
-                options.body = this.bodytosend;
-                const requestHeaders = new Headers(options.headers);
-                requestHeaders.delete('content-type');
-                options.headers = requestHeaders;
+            const headers = new Headers(options.headers);
+            headers.delete("content-type");
+            options.headers = headers;
+        } else if (this.bodytosend !== undefined) {
+            options.body = JSON.stringify(this.bodytosend);
 
+            const headers = new Headers(options.headers);
+            if (!headers.has("content-type")) {
+                headers.set("content-type", "application/json");
             }
-            else {
-                options.body = JSON.stringify(this.bodytosend)
-            }
+            options.headers = headers;
         }
-        return options;
     }
+
+    return options;
+}
 
     async sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -277,17 +286,15 @@ class concurrencyengine {
 
 const requestengine = async ({ link, method, headers, bodytosend, isget, data, file, isfile, blobmode = false }) => {
     // //console.log("The data is ", data);
-
+    console.log("the method is ", method, "the link is ", link, "the headers are ", headers, "the bodytosend is ", bodytosend, "the isget is ", isget, "the data is ", data, "the file is ", file, "the isfile is ", isfile, "the blobmode is ", blobmode);
     const engine = new concurrencyengine({
         link, method, headers,
         bodytosend, isget, data, file, isfile, blobmode
     });
     // //console.log("The engine is ", engine);
     const result = await engine.beginsimulation();
-    console.log("The result is ", result);
-
-
-    return [1, "Request sent successfully", 200];
+    // console.log("The result is ", result);
+    return [1, result, 200];
 
 
 }

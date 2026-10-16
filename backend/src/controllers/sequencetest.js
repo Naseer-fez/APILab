@@ -5,8 +5,9 @@ import { log } from '../utils/logger.js';
 import { sendtheevent } from '../services/sequencetestsse.js';
 import { openAsBlob } from 'node:fs';
 import path from 'node:path';
+import { resultmetric } from '../services/resultsmetric.js';
 
-
+const resultid = "sequence_test"; //This is the id for the result metric to store the results in the result metric service
 
 const sequencetestController = async (req, res) => {
     // console.log("Received request with body: ", req.body);
@@ -52,8 +53,10 @@ const sequencetestController = async (req, res) => {
     // console.log("The total requests data is :", totalrequestsdata);
     //Body has been parsed and validated, now we can send the response to the client
     // console.log("Parsed body is ", totalrequestsdata[0].condit);
+    // console.log("The total requests data is :", totalrequestsdata);
     const finalresult = await handelrequests(totalrequestsdata, globaldata, res, req); //We will send the parsed body to the handelrequests function
-    return res.status(finalresult[2]).json(finalresult[1]); //We can diraclty send the response we will validate that in the function itself    
+    return res.status(finalresult[2]).json({ "message": "Sequence test completed successfully",
+         "data": finalresult[1] }); //We can diraclty send the response we will validate that in the function itself    
 }
 const sendrequest = async ({ link, method, headers, data = {}, filedata = null, fileavailable = false, filekey = "file" }) => {
     //This is the basic function which will be used to send the request to the other server
@@ -62,6 +65,7 @@ const sendrequest = async ({ link, method, headers, data = {}, filedata = null, 
     // log(`Sending request to link: ${link} with method: ${method} and headers: ${JSON.stringify(headers)} and data: ${JSON.stringify(data)} and file available: ${fileavailable}`, 'info', 'sequencetest.log');
     //    log("The link is",link)
     if (fileavailable) {
+
         return await sendfile(link, method, headers, filedata, filekey);
     } //Simple abstraction
     link = (() => {
@@ -82,11 +86,13 @@ const sendrequest = async ({ link, method, headers, data = {}, filedata = null, 
             headers: headers
         });
     } else {    // console.log("Sending Data is :", data);
-        result = await fetch(link, {
+        const bodytosend = {
             method: method,
             headers: headers,
             body: JSON.stringify(data)
-        });
+        }
+        resultmetric.datacalulator(resultid, bodytosend, false); // sent data
+        result = await fetch(link, bodytosend);
     }
     // console.log("The data sent is ", data);
 
@@ -97,6 +103,11 @@ const sendrequest = async ({ link, method, headers, data = {}, filedata = null, 
     } catch {
         responseData = await result.text();
     }
+    finally {
+        resultmetric.datacalulator(resultid, responseData, true); // received data
+    }
+    metricanalysis(result); //async function to store the result and diagnostics in the result metric service
+
 
     return [
         result.ok ? 1 : 0,
@@ -109,8 +120,20 @@ const sendrequest = async ({ link, method, headers, data = {}, filedata = null, 
     ];
 
 }
+const metricanalysis = async (result) => {
+    await resultmetric.storeresult(resultid, {
+        status: result.status, data: result, headers: Object.fromEntries(result.headers.entries())
+
+    });
+    if (!result.ok) await resultmetric.storediagnostics(resultid,
+        { status: result.status, data: result, headers: Object.fromEntries(result.headers.entries()) }); //async fun
+
+
+}
+
 
 const sendfile = async (link, method, headers, filedata, filekey = "file") => {
+
     const filedataArray = Array.isArray(filedata) ? filedata : [filedata];
     try {
         const form = new FormData();
@@ -129,12 +152,13 @@ const sendfile = async (link, method, headers, filedata, filekey = "file") => {
 
         const requestHeaders = new Headers(headers);
         requestHeaders.delete("Content-Type");
-
-        const response = await fetch(link, {
-            method,
+        const bodytosend = {
+            method: method,
             headers: requestHeaders,
             body: form
-        });
+        }
+        resultmetric.datacalulator(resultid, bodytosend, false); // sent data
+        const response = await fetch(link, bodytosend);
 
         const text = await response.text();
         let data;
@@ -143,7 +167,10 @@ const sendfile = async (link, method, headers, filedata, filekey = "file") => {
             data = JSON.parse(text);
         } catch {
             data = text;
+        } finally {
+            resultmetric.datacalulator(resultid, data, true); // received data
         }
+        metricanalysis(response); //async fun
 
         return [
             response.ok ? 1 : 0,
@@ -184,12 +211,18 @@ const handelrequests = async (body, globaldata, res = null, req = null) => {
 
         const originalrequest = body[i];
         const request = await resolvedata(originalrequest, previousrequest, globaldata);
-
+        resultmetric.datacalulator(resultid, request, false); //we will store the data sent to the server
+        resultmetric.startlatency(resultid, i + 1); //Start the latency timer for this request
         // console.log("Resolved request for request number ", i + 1, ":", request);
         const response = await sendrequest(request);
         // if (response[0] === 0) {
         //     return response; //If the request failed we will return the error
         // }
+        resultmetric.endlatency(resultid, i + 1); //End the latency timer for this request
+        // resultmetric.storeresult(resultid, {
+        //     status: response[2] ?? 200, data: response[1],
+        //     headers: Object.fromEntries(response[1].headers.entries())
+        // }); //async fun
         globalresponse.response[i] = response[1]; //We will store the response in the globalresponse object
         const conditionresult = conditionschecker(originalrequest.condition
             , response[1], response[0] === 0);
@@ -228,7 +261,7 @@ const handelrequests = async (body, globaldata, res = null, req = null) => {
         }
     }
 
-    return resultparser(finalresult); //We will return the final result after parsing it
+    return await resultparser(finalresult); //We will return the final result after parsing it
 
 
 }
@@ -688,9 +721,10 @@ const changedata = (condition, response, nextrequest = {}) => {
     return [1, result, 200];
 };
 
-const resultparser = (result) => {
+const resultparser = async (result) => {
+    result = await resultmetric.combineresults(resultid, result); //We will combine the results and return the final result
     console.log("The final result is :", result);
-    return  [1, result,200]; //test
+    return [1, result, 200]; //We will return the final result
 }
 
 

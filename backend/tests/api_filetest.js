@@ -98,7 +98,7 @@ async function runTest() {
         console.log("Status:", response.status);
         console.log(
             "Response:",
-            JSON.stringify(result.message, null, 2)
+            JSON.stringify(result.data, null, 2)
         );
 
     } catch (error) {

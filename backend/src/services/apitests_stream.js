@@ -1,4 +1,23 @@
 import crypto from "crypto";
+import { resultmetric } from './resultsmetric.js';
+const resultid = "api_test";
+
+//This will track the bytes sent and received in the stream and update the resultmetric accordingly
+const trackStreamBytes = async function* (stream) {
+    for await (const chunk of stream) {
+        const buffer = Buffer.isBuffer(chunk)
+            ? chunk
+            : Buffer.from(chunk);
+
+        await resultmetric.datacalulator(
+            resultid,
+            buffer,
+            false // sent
+        );
+
+        yield buffer;
+    }
+};
 
 const sendfiles = async (
     link,
@@ -6,7 +25,8 @@ const sendfiles = async (
     headers = {},
     obj = {},
     file = null,
-    fieldname = "file"
+    fieldname = "file",
+    num = 1
 ) => {
     if (!file || !file.stream) {
         return [0, "Invalid file stream", 400];
@@ -32,13 +52,15 @@ const sendfiles = async (
                 obj.appenddata
             );
         }
-
+        body = trackStreamBytes(body);
+        resultmetric.startlatency(resultid, num);
         const response = await fetch(link, {
             method: method,
             headers: headers,
             body: body,
             duplex: "half"
         });
+        resultmetric.endlatency(resultid, num);
 
         return [
             1,
@@ -54,7 +76,7 @@ const sendfiles = async (
         ? file.file.split(/[\\/]/).pop()
         : "file";
 
-    const body = createMultipartStream(
+    const multipartBody  = createMultipartStream(
         obj,
         file.stream,
         file.fieldname || fieldname,
@@ -63,7 +85,7 @@ const sendfiles = async (
         boundary,
         obj.append === true ? obj.appenddata : null
     );
-
+    const body = trackStreamBytes(multipartBody);
     const newHeaders = {};
 
     for (const key in headers) {
@@ -74,14 +96,14 @@ const sendfiles = async (
 
     newHeaders["Content-Type"] =
         "multipart/form-data; boundary=" + boundary;
-
+    resultmetric.startlatency(resultid, num);
     const response = await fetch(link, {
         method: method,
         headers: newHeaders,
         body: body,
         duplex: "half"
     });
-
+    resultmetric.endlatency(resultid, num);
     return [
         1,
         response,
@@ -167,6 +189,32 @@ const appendToStream = async function* (
         }
     }
 };
+
+const metricanalysis = async (result) => {
+    let data;
+
+    const text = await result.text();
+
+    try {
+        data = JSON.parse(text);
+    } catch {
+        data = text;
+    }
+    resultmetric.datacalulator(resultid, data, true); //recived
+    const resultdata = {
+        status: result.status,
+        data: data,
+        headers: Object.fromEntries(result.headers.entries())
+    };
+
+    await resultmetric.storeresult(resultid, resultdata);
+
+    if (!result.ok) {
+        await resultmetric.storediagnostics(resultid, resultdata);
+    }
+};
+
+
 
 export {
     sendfiles

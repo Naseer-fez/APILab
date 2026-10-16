@@ -10,31 +10,36 @@ const ResultMap = new Map();//This will store the result for each id
 
 const diagnosticsMap = new Map();//This will store the diagnostics for each id
 
-const startlatency = async (reqindex) => {
+const startlatency = async (key = "default", reqindex) => {
     if (!reqindex) {
         throw new Error("reqindex is required"); //This is for the backedn 
     }
-    if (LatencyMap.has(reqindex)) return; //If the id is already present then return
-    LatencyMap.set(reqindex, { start: Date.now() }); //This will store the start time for the id
+    const index = String(key + "_" + reqindex); //We will create a unique key for each request
+    if (LatencyMap.has(index)) return; //If the id is already present then return
+    LatencyMap.set(index, { start: Date.now() }); //This will store the start time for the id
 
 }
 
-const endlatency = async (reqindex) => {
+const endlatency = async (key = "default", reqindex) => {
     if (!reqindex) {
         throw new Error("reqindex is required");
     }
-    if (!LatencyMap.has(reqindex)) return; //If the id is not present then return
-    const latency = LatencyMap.get(reqindex);
+    const index = String(key + "_" + reqindex); //We will create a unique key for each request
+    if (!LatencyMap.has(index)) return; //If the id is not present then return
+    const latency = LatencyMap.get(index);
     if (!latency) return;
     latency.end = Date.now();
     latency.duration = Number((latency.end - latency.start).toFixed(6));
-
+    LatencyMap.set(index, latency);
 }
-const calculatelatencymetric = async () => {
+const calculatelatencymetric = async (key = "default") => {
     //Now simple lets just pull the LatencyMap and calculate the latency for each id and return the average latency
     const durations = [];
     for (const [id, latency] of LatencyMap.entries()) {
-        if (Number.isFinite(latency.duration)) {
+        if (
+            id.startsWith(`${key}_`) &&
+            Number.isFinite(latency.duration)
+        ) {
             durations.push(latency.duration);
         }
     }
@@ -155,15 +160,17 @@ const getdatasize = async (data) => {
 }
 
 
-const combineresults = async (totaldata, key = "default") => {
-    totaldata.latency = await calculatelatencymetric();
+
+const combineresults = async (key = "default", totaldata) => {
+    // console.log("Combining results for key: ", key);
+    totaldata.latency ??= await calculatelatencymetric(key);
     totaldata.dataprocessed ??= {};
     totaldata.dataprocessed.sent = DataMap.get(key)?.sent ?? 0;
     totaldata.dataprocessed.received = DataMap.get(key)?.received ?? 0;
     totaldata.result = ResultMap.get(key) ?? []; //full array
     totaldata.diagnostics = diagnosticsMap.get(key) ?? []; //full array 
     totaldata.summary ??= await summaryreport(key, totaldata);
-    // console.log("all the keys are ", Object.keys(totaldata));
+    // console.log("all the keys are ",Object.keys(totaldata));
     return totaldata;
 }
 

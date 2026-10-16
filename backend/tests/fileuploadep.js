@@ -8,7 +8,7 @@ fileUploadRouter.post('/filetest', upload.fields([
     { name: 'data', maxCount: 1 }
 ]), (req, res) => {
 
-    console.log("File upload test route is working");
+    // console.log("File upload test route is working");
     res.status(200).json({
         received: true,
         filename: req.file?.originalname

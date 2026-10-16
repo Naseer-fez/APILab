@@ -4,7 +4,11 @@ import fs from 'fs';
 import path from 'path';
 import { filemanager } from '../services/apitests_file.js';
 import { sendfiles } from '../services/apitests_stream.js';
+import { resultmetric } from '../services/resultsmetric.js';
+import { log } from '../utils/logger.js';
 //gibberish is the speical symbol to diffrenct the user and server data
+
+const resultid = "api_test";
 
 const apitestsController = async (req, res) => {
     // console.log("Hi")
@@ -45,17 +49,22 @@ const apitestsController = async (req, res) => {
             file: filedata
         }
     );
-    if (outputrate[0] === 1) {
-        outputrate = resultsparser(outputrate[1]);
-    }
-
+    const finalresult = await resultmetric.combineresults(
+        resultid,
+        outputrate
+    );
+    // const log = async (messageinfo, message, level = "INFO", filename = null)
+    // log("API Test Controller", {finalresult: finalresult}, "INFO");
+    // console.log("Output rate is: ", outputrate);
+    // console.log("the data is :", data[1]);
     return res.status(data[2]).json({
-        message: data[1], //this the sent data
-        data: outputrate //this is the result
-    }); //chcek this is wrong righ
+        message: "API Test completed successfully",
+        data: finalresult, //this is the result
+        sent: data[1], //this the sent data
+    });
 }
 
-const sendrequest = async (link, method, headers, obj = {}, file = null, fieldname = "file") => {
+const sendrequest = async (link, method, headers, obj = {}, file = null, fieldname = "file", num = 1) => {
     // Now we will send the request to the link with the method and the data/
     // We will use the fetch API to send the request
     // console.log("Sending request to: ", link);
@@ -65,8 +74,8 @@ const sendrequest = async (link, method, headers, obj = {}, file = null, fieldna
         let result;
         if (file) {
             //bettet to create anoter function for the files
-            const fileresult = await sendfiles(link, method, headers, obj, file, fieldname);
-        //    result = fileresult[1];
+            const fileresult = await sendfiles(link, method, headers, obj, file, fieldname, num);
+            //    result = fileresult[1];
             if (fileresult[0] === 1) {
                 result = fileresult[1];
             } else {
@@ -80,23 +89,27 @@ const sendrequest = async (link, method, headers, obj = {}, file = null, fieldna
             }
             //To send both the multiformat and the rawbytes to save the ram 
         }
+        else {
 
+            resultmetric.startlatency(resultid, num);
+            if (method === 'GET') {
+                // For GET requests, we will append the data as query parameters
+                const url = new URL(link);
+                Object.entries(obj).forEach(([key, value]) => {
+                    url.searchParams.append(key, value);
+                });
+                result = await fetch(url, { method: 'GET', headers: headers });
 
-        else if (method === 'GET') {
-            // For GET requests, we will append the data as query parameters
-            const url = new URL(link);
-            Object.entries(obj).forEach(([key, value]) => {
-                url.searchParams.append(key, value);
-            });
-            result = await fetch(url, { method: 'GET', headers: headers });
-        } else {
-            result = await fetch(link, {
-                method: method.toUpperCase(),
-                body: JSON.stringify(obj),
-                headers: headers
-            });
+            } else {
+                result = await fetch(link, {
+                    method: method.toUpperCase(),
+                    body: JSON.stringify(obj),
+                    headers: headers
+                });
+            }
+            resultmetric.endlatency(resultid, num);
+            await resultmetric.datacalulator(resultid, obj, false); //sent
         }
-
         //Now i can just send anything back but i fell it will be better to send 
         // The status code , the any other messagae from the server and the data we used 
         let body;
@@ -104,8 +117,11 @@ const sendrequest = async (link, method, headers, obj = {}, file = null, fieldna
             body = await result.text();
         } catch {
             body = "No Body Received";
-        }
+        } finally {
 
+        }
+        await resultmetric.datacalulator(resultid, body, true);
+         await metricanalysis(result);
         return {
             ok: result.ok,
             status: result.status,
@@ -158,7 +174,7 @@ const apitests = async ({ link, method, data, headers, requests, file }) => {
             }
             i++;
             count++;
-            promises.push(sendrequest(link, method, headers, combination));
+            promises.push(sendrequest(link, method, headers, combination, null, null, i));
         }
         if (count === 0) {
             break;
@@ -170,21 +186,7 @@ const apitests = async ({ link, method, data, headers, requests, file }) => {
     return results;
 }
 
-const resultsparser = (results) => {
-    //Now lets work on this 
-    // console.log("Results are: ", results);
-    const successfulRequests = results.filter(response => response.ok).length;
-    const failedRequests = results.length - successfulRequests;
-    // console.log("Results are: ", results);
-    const body = {
-        successful: successfulRequests,
-        failed: failedRequests,
 
-    };
-    console.log("Results are: ", body);
-    return body;
-
-};
 
 // Good luck making this in cpp man in future  i just had to copy this full
 function* generatecombinations(data) {
@@ -222,10 +224,10 @@ const filetests = async ({ link, method, data, headers, requests, file }) => {
     // console.log("The data is: ", data);
     var ismulter = file.multerfile;
     const defaultval = data.file?.defaultval ?? file?.defaultval ?? false;
-    
+
     // console.log("The file is: ", file);
     const filelist = Object.values(file).filter(f => f && typeof f === 'object' && Array.isArray(f.values));
-    if(filelist.length === 0 && defaultval === true) {
+    if (filelist.length === 0 && defaultval === true) {
         //That means now we need to make this file list equal to the values
 
     }
@@ -233,10 +235,10 @@ const filetests = async ({ link, method, data, headers, requests, file }) => {
     let i = 0;
     let mintry = 5; //fez
     let indexofsize = 0;
-    let index=0;
+    let index = 0;
     while (promises.length < requests) {
         let sent = false;
-        
+
         // console.log("Default value is:(While loop) ", defaultval);
         for (const filedata of filelist) {
             // console.log("File data is: ", filedata);
@@ -278,7 +280,16 @@ const filetests = async ({ link, method, data, headers, requests, file }) => {
     return results;
 }
 
+const metricanalysis = async (result) => {
+    await resultmetric.storeresult(resultid, {
+        status: result.status, data: result, headers: Object.fromEntries(result.headers.entries())
 
+    });
+    if (!result.ok) await resultmetric.storediagnostics(resultid,
+        { status: result.status, data: result, headers: Object.fromEntries(result.headers.entries()) }); //async fun
+    resultmetric.datacalulator(resultid, result, true); //recived
+
+}
 
 
 
