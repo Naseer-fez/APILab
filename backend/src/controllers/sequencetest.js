@@ -56,8 +56,11 @@ const sequencetestController = async (req, res) => {
     // console.log("The total requests data is :", totalrequestsdata);
     const finalresult = await handelrequests(totalrequestsdata, globaldata, res, req); //We will send the parsed body to the handelrequests function
     const formatted = resultmetric.formatResponse(finalresult[1]);
+    const message = finalresult[0] === 1
+        ? "Sequence test completed successfully"
+        : (finalresult[1]?.conditionmessage?.message || finalresult[1]?.message || "Sequence test failed");
     return res.status(finalresult[2]).json({
-        message: "Sequence test completed successfully",
+        message,
         metrics: formatted.metrics,
         data: formatted.data
     });
