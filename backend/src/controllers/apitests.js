@@ -55,12 +55,11 @@ const apitestsController = async (req, res) => {
     );
     // const log = async (messageinfo, message, level = "INFO", filename = null)
     // log("API Test Controller", {finalresult: finalresult}, "INFO");
-    // console.log("Output rate is: ", outputrate);
-    // console.log("the data is :", data[1]);
-    return res.status(data[2]).json({
+    const formatted = resultmetric.formatResponse(finalresult);
+    return res.status(200).json({
         message: "API Test completed successfully",
-        data: finalresult, //this is the result
-        sent: data[1], //this the sent data
+        metrics: formatted.metrics,
+        data: data[1]
     });
 }
 

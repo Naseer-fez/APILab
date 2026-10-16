@@ -6,7 +6,7 @@ const sequencetestRouter = express.Router();
 // sequencetestRouter.use(express.json({ type: "*/*" }));
 sequencetestRouter.post('/sequencetest', sequencetestController);
 
-sequencetestRouter.post('/sequencetest/file', upload.single('file'), sequencetestController);
+sequencetestRouter.post('/sequencetest/file', upload.array('file'), sequencetestController);
 
 sequencetestRouter.get('/sequencetest/events/:jobid', SSEcontroller);
 

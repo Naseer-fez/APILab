@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.post('/apitests', apitestsController);
 
-router.post('/apitests/file', upload.single('file'), apitestsController);
+router.post('/apitests/file', upload.array('file'), apitestsController);
 
 /*
 This route is used to send a varaity of diffrnet requests to the server and to verfiry the result back 

@@ -1,5 +1,6 @@
 import { parsebody } from '../services/concurencytest.js';
 import {requestengine} from '../services/concurencyengine.js';
+import { resultmetric } from '../services/resultsmetric.js';
 
 const concurrencetestcontroller = async (req, res) => {
     
@@ -18,8 +19,12 @@ const concurrencetestcontroller = async (req, res) => {
     if (enginedata[0] === 0) {
         return res.status(enginedata[2]).json({ message: enginedata[1] });
     }
-    res.status(200).json({ message: "concurrency test controller",
-         data: enginedata[1] });
+    const formatted = resultmetric.formatResponse(enginedata[1]);
+    return res.status(200).json({
+        message: "Concurrency test completed successfully",
+        metrics: formatted.metrics,
+        data: formatted.data
+    });
 }
 
 const concurrencerequest = async ({ link, method, headers, data, bodytosend,file,isfile,blobmode=false }) => {

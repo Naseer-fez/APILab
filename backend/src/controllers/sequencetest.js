@@ -55,8 +55,12 @@ const sequencetestController = async (req, res) => {
     // console.log("Parsed body is ", totalrequestsdata[0].condit);
     // console.log("The total requests data is :", totalrequestsdata);
     const finalresult = await handelrequests(totalrequestsdata, globaldata, res, req); //We will send the parsed body to the handelrequests function
-    return res.status(finalresult[2]).json({ "message": "Sequence test completed successfully",
-         "data": finalresult[1] }); //We can diraclty send the response we will validate that in the function itself    
+    const formatted = resultmetric.formatResponse(finalresult[1]);
+    return res.status(finalresult[2]).json({
+        message: "Sequence test completed successfully",
+        metrics: formatted.metrics,
+        data: formatted.data
+    });
 }
 const sendrequest = async ({ link, method, headers, data = {}, filedata = null, fileavailable = false, filekey = "file" }) => {
     //This is the basic function which will be used to send the request to the other server

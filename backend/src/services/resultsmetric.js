@@ -188,11 +188,37 @@ const storediagnostics = async (id = "default", diagnostics) => {
 
 
 
+const formatResponse = (combinedResult) => {
+    const { latency, summary, dataprocessed, requestcycle, cycles, ...data } = combinedResult || {};
+    
+    let cyclesArray = [];
+    if (Array.isArray(cycles)) {
+        cyclesArray = cycles;
+    } else if (Array.isArray(requestcycle)) {
+        cyclesArray = requestcycle;
+    } else if (requestcycle && typeof requestcycle === 'object') {
+        cyclesArray = Object.values(requestcycle);
+    } else if (cycles && typeof cycles === 'object') {
+        cyclesArray = Object.values(cycles);
+    }
+
+    return {
+        metrics: {
+            latency: latency ?? null,
+            summary: summary ?? null,
+            dataprocessed: dataprocessed ?? null,
+            cycles: cyclesArray
+        },
+        data
+    };
+};
+
 const resultmetric = {
     startlatency,
     endlatency, calculatelatencymetric,
     storediagnostics,
-    datacalulator, getdatasize, combineresults, storeresult
+    datacalulator, getdatasize, combineresults, storeresult,
+    formatResponse
 }
 
 export {
