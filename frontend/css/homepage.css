@@ -1,0 +1,587 @@
+/* ========================================================
+   HOMEPAGE SPECIFIC STYLES
+   Space-optimized layout, scrollable JSON Area, `<>` chain branches,
+   Figma FORMAT/PASTE buttons, and right-side action buttons stack
+======================================================== */
+
+.homepage-layout {
+  width: 100%;
+  max-width: 1100px;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 170px;
+  gap: 32px;
+  align-items: center;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  animation: homepageFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes homepageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ========================================================
+   JSON AREA CARD (Figma rounded translucent box)
+======================================================== */
+.json-area-card {
+  position: relative;
+  background: rgba(217, 217, 217, 0.76);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 28px;
+  padding: 24px 32px 20px 32px;
+  height: 480px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55),
+              inset 0 1px 3px rgba(255, 255, 255, 0.65);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #1a1a1a;
+  overflow: hidden; /* Only inner area scrolls! */
+}
+
+/* Card Header */
+.json-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-bottom: 8px;
+  gap: 12px;
+}
+
+.json-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.json-area-title {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: #2b2b2b;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Mode Switcher Tabs: MANUAL vs CHAIN */
+.json-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 9999px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.mode-tab-btn {
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  padding: 5px 14px;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.mode-tab-btn:hover {
+  color: #000;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.mode-tab-btn.active {
+  background: #000000;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* FORMAT button (Exact Figma: Green fill, Purple border) */
+.btn-format {
+  background: #376D33;
+  border: 3px solid #5A2761;
+  color: #FFFFFF;
+  padding: 9px 24px;
+  border-radius: 9999px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease, filter 0.2s ease;
+  user-select: none;
+}
+
+.btn-format:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+}
+
+.btn-format:active {
+  transform: translateY(1px);
+}
+
+/* ========================================================
+   SCROLLABLE INNER WORKSPACE (Only this area has scrollbar)
+======================================================== */
+.json-area-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px 10px 10px 0;
+  margin: 8px 0;
+}
+
+/* Custom styled inner scrollbar */
+.json-area-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+.json-area-scrollable::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+}
+.json-area-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(10, 101, 99, 0.45);
+  border-radius: 8px;
+}
+.json-area-scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(10, 101, 99, 0.7);
+}
+
+/* Clear / Blank Start State */
+.clear-workspace-canvas {
+  height: 100%;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  color: #4b5563;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.btn-start-workspace {
+  background: rgba(0, 0, 0, 0.08);
+  border: 2px dashed rgba(0, 0, 0, 0.35);
+  border-radius: 9999px;
+  padding: 10px 22px;
+  color: #1f2937;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-start-workspace:hover {
+  background: rgba(0, 0, 0, 0.14);
+  border-color: #000;
+  color: #000;
+  transform: scale(1.02);
+}
+
+/* ========================================================
+   `<>{` CHAIN BRACKET STRUCTURE & ROWS
+======================================================== */
+.chain-bracket-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: var(--font-mono);
+  color: #3b1840;
+}
+
+.chain-bracket-head,
+.chain-bracket-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 20px;
+  font-weight: 800;
+  user-select: none;
+}
+
+.chain-bracket-head .bracket-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #5A2761;
+  font-size: 20px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.chain-bracket-head .bracket-toggle:hover {
+  background: rgba(90, 39, 97, 0.12);
+  transform: scale(1.1);
+}
+
+/* Nested Branch indent */
+.chain-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-left: 24px;
+  border-left: 2px solid rgba(90, 39, 97, 0.25);
+  margin-left: 14px;
+  transition: all 0.25s ease;
+}
+
+.chain-body.reduced {
+  display: none;
+}
+
+.reduced-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(90, 39, 97, 0.12);
+  border: 1px dashed #5A2761;
+  border-radius: 9999px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #5A2761;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 24px;
+}
+
+/* Row with `<>` and KEY/VALUE pills */
+.kv-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* `<>` Clickable Branch Reducer */
+.btn-bracket-icon {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 800;
+  color: #5A2761;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  user-select: none;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.btn-bracket-icon:hover {
+  background: rgba(90, 39, 97, 0.15);
+  transform: scale(1.15);
+}
+
+/* Exact Figma Black KEY pill */
+.pill-input-key {
+  flex: 0 0 150px;
+  background: #000000;
+  border: 1px solid #1f1f1f;
+  border-radius: 9999px;
+  color: #FFFFFF;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-align: center;
+  padding: 12px 20px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  outline: none;
+  user-select: text !important;
+  pointer-events: auto !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pill-input-key:focus {
+  border-color: #5A2761;
+  box-shadow: 0 0 0 3px rgba(90, 39, 97, 0.35);
+}
+
+.pill-input-key::placeholder {
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+/* Exact Figma Black VALUE pill */
+.pill-input-value {
+  flex: 1;
+  max-width: 380px;
+  background: #000000;
+  border: 1px solid #1f1f1f;
+  border-radius: 9999px;
+  color: #FFFFFF;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-align: center;
+  padding: 12px 24px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  outline: none;
+  user-select: text !important;
+  pointer-events: auto !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pill-input-value:focus {
+  border-color: var(--color-teal);
+  box-shadow: 0 0 0 3px rgba(10, 101, 99, 0.35);
+}
+
+.pill-input-value::placeholder {
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.btn-remove-row {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0.4;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.kv-row:hover .btn-remove-row {
+  opacity: 1;
+}
+
+.btn-remove-row:hover {
+  color: #ef4444;
+}
+
+/* Row-level reduced view */
+.kv-row.row-reduced .pill-input-value {
+  display: none;
+}
+
+.kv-row.row-reduced .pill-input-key {
+  flex: 0 0 auto;
+}
+
+.kv-row.row-reduced::after {
+  content: '... [folded]';
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #5A2761;
+  font-weight: 700;
+}
+
+/* Add buttons bar */
+.chain-controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.btn-add-kv {
+  background: transparent;
+  border: 1px dashed rgba(0, 0, 0, 0.35);
+  border-radius: 9999px;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-add-kv:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: #000;
+  border-color: #000;
+}
+
+/* ========================================================
+   MANUAL JSON EDITOR (Freeform manual typing)
+======================================================== */
+.manual-editor-container {
+  width: 100%;
+  height: 100%;
+  min-height: 290px;
+  display: flex;
+  flex-direction: column;
+}
+
+.manual-editor-textarea,
+.formatted-json-textarea {
+  width: 100%;
+  flex: 1;
+  min-height: 250px;
+  background: rgba(18, 22, 28, 0.94);
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  border-radius: 20px;
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #78C2E9;
+  outline: none;
+  resize: none;
+  box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.65), 0 4px 12px rgba(0, 0, 0, 0.12);
+  white-space: pre;
+  tab-size: 2;
+  user-select: text !important;
+  pointer-events: auto !important;
+  cursor: text;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.manual-editor-textarea:focus,
+.formatted-json-textarea:focus {
+  border-color: #5A2761;
+  box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.65), 0 0 0 3px rgba(90, 39, 97, 0.35);
+}
+
+.manual-editor-textarea::placeholder {
+  color: #6b7280;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.manual-editor-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #4b5563;
+}
+
+.manual-syntax-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.manual-syntax-pill.valid {
+  background: rgba(55, 109, 51, 0.18);
+  color: #2e692a;
+}
+
+.manual-syntax-pill.invalid {
+  background: rgba(229, 9, 20, 0.15);
+  color: #b91c1c;
+}
+
+.manual-syntax-pill.blank {
+  background: rgba(0, 0, 0, 0.08);
+  color: #6b7280;
+}
+
+/* Card Footer */
+.json-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  padding-top: 8px;
+}
+
+/* PASTE button (Exact Figma: Teal fill, Rust-red border) */
+.btn-paste {
+  background: #3B6C76;
+  border: 3px solid #7E3B27;
+  color: #FFFFFF;
+  padding: 9px 26px;
+  border-radius: 9999px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease, filter 0.2s ease;
+  user-select: none;
+}
+
+.btn-paste:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+}
+
+.btn-paste:active {
+  transform: translateY(1px);
+}
+
+/* ========================================================
+   RIGHT-SIDE ACTION BUTTONS (RUN, RESULT, HISTORY, EDITOR)
+======================================================== */
+.action-buttons-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+}
+
+.action-buttons-column .action-pill-btn {
+  width: 165px;
+  height: 52px;
+}
+
+@media (max-width: 900px) {
+  html, body {
+    overflow: auto; /* Allow scroll on small mobile viewports */
+  }
+
+  .app-viewport {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .homepage-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    height: auto;
+  }
+
+  .action-buttons-column {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .action-buttons-column .action-pill-btn {
+    width: auto;
+    min-width: 130px;
+  }
+}

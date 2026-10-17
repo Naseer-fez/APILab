@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Integration - JSON Editor</title>
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/jsoneditor.css">
+</head>
+<body>
+
+  <!-- MAIN APPLICATION VIEWPORT -->
+  <div class="app-viewport">
+
+    <!-- TOP BAR: HOME BUTTON (🏠) & JSON EDITOR BADGE -->
+    <header class="editor-top-bar">
+      <a href="index.html?from=editor" class="btn-home" onclick="handleReturnHome(event)" title="Return to Homepage">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1v-9.5z"/>
+        </svg>
+      </a>
+
+      <div class="json-editor-pill-badge">
+        <span>JSON EDITOR</span>
+      </div>
+    </header>
+
+    <!-- MAIN EDITOR & BUTTONS LAYOUT -->
+    <main class="editor-page-layout">
+      
+      <!-- LARGE CODE EDITOR CARD -->
+      <section class="editor-card-container">
+        <div class="editor-card-header">
+          <button class="btn-copy-pill" onclick="handleCopy()" title="Copy JSON payload to clipboard">COPY</button>
+        </div>
+
+        <div class="code-editor-wrapper">
+          <div class="line-numbers-column" id="lineNumbersCol"></div>
+          <textarea class="editor-textarea" id="jsonCodeInput" spellcheck="false" placeholder="// Paste or type JSON payload here..."></textarea>
+        </div>
+
+        <div class="editor-status-bar">
+          <span class="syntax-status-badge valid" id="syntaxBadge">● Valid JSON</span>
+          <span>Schema Tolerant Parser</span>
+        </div>
+      </section>
+
+      <!-- RIGHT SIDE: CONCURRENCY, FUZZY, SEQUENCE & AUTO FIX -->
+      <aside class="editor-side-column">
+        <button class="action-pill-btn pill-concurrency" onclick="setMode('concurrency')">CONCURRENCY</button>
+        <button class="action-pill-btn pill-fuzzy" onclick="setMode('fuzzy')">FUZZY</button>
+        <button class="action-pill-btn pill-sequence" onclick="setMode('sequence')">SEQUENCE</button>
+
+        <!-- DISTINCT FIGMA AUTO FIX BUTTON -->
+        <button class="btn-auto-fix" onclick="handleAutoFix()" title="Auto repair JSON syntax, quotes, and brackets">
+          <span>AUTO</span>
+          <span>FIX</span>
+        </button>
+      </aside>
+
+    </main>
+
+  </div>
+
+  <script src="js/global.js"></script>
+  <script src="js/jsoneditor.js"></script>
+</body>
+</html>
