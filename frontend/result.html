@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Results & Metrics - API Integration Platform</title>
+
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/result.css">
+</head>
+<body>
+
+  <div class="app-viewport">
+    
+    <!-- ==========================================================================
+         TOP BAR: HOME RETURN, CONNECTED NODE CHAIN, TITLE BADGE
+         ========================================================================== -->
+    <header class="result-top-bar">
+      <!-- Left: Home Return Button -->
+      <a href="index.html?from=result" class="btn-home-circle" title="Return to Homepage">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+        </svg>
+      </a>
+
+      <!-- Center: Curved Bezier Node Chain (CONCURRENCY ~ FUZZY ~ SEQUENCE) -->
+      <svg class="node-chain-svg" viewBox="100 10 440 60">
+        <!-- Connecting Curved White Arcs -->
+        <path d="M 195 38 C 218 42, 238 48, 258 50" class="node-connector-line" />
+        <path d="M 358 50 C 378 48, 398 42, 420 38" class="node-connector-line" />
+
+        <!-- Node 1: CONCURRENCY -->
+        <g class="node-pill-group active" data-mode="CONCURRENCY">
+          <rect x="110" y="16" width="115" height="42" rx="21" fill="#73412A" stroke="#67752C" stroke-width="3" />
+          <text x="167" y="38">CONCURENCY</text>
+        </g>
+
+        <!-- Node 2: FUZZY -->
+        <g class="node-pill-group" data-mode="FUZZY">
+          <rect x="250" y="28" width="115" height="42" rx="21" fill="#2A6B73" stroke="#753B2C" stroke-width="3" />
+          <text x="307" y="50">FUZZY</text>
+        </g>
+
+        <!-- Node 3: SEQUENCE -->
+        <g class="node-pill-group" data-mode="SEQUENCE">
+          <rect x="390" y="16" width="115" height="42" rx="21" fill="#542A73" stroke="#2C754E" stroke-width="3" />
+          <text x="447" y="38">SEQUENCE</text>
+        </g>
+      </svg>
+
+      <!-- Right: Title Stadium Pill -->
+      <div class="result-badge-pill">
+        <span>RESULTS &amp; METRIC</span>
+      </div>
+    </header>
+
+    <!-- ==========================================================================
+         MAIN RESULTS GRID (VISUALIZER + AVAILABLE METRICS SIDEBAR)
+         ========================================================================== -->
+    <main class="result-layout">
+      
+      <!-- Left/Center: Dynamic Results Display Card -->
+      <section id="resultDisplayCard" class="result-display-card glass-card">
+        <div id="resultVisualizerBody" class="result-scrollable-body custom-scrollable">
+          <!-- Dynamically populated by result.js depending on active metric tab -->
+        </div>
+      </section>
+
+      <!-- Right Side: Available Metrics Sidebar -->
+      <aside class="available-metrics-card">
+        <div class="available-metrics-header">Available Metrics</div>
+        
+        <div id="availableMetricsScrollable" class="available-metrics-list custom-scrollable">
+          <!-- Metric 1: Executive Verdict & KPIs -->
+          <button class="btn-metric-item verdict active" data-metric="verdict" title="Primary health verdict & speed summary">
+            <span class="metric-item-title">Executive Verdict</span>
+            <span class="metric-item-subtitle">1-Sec Health &amp; Speed</span>
+          </button>
+
+          <!-- Metric 2: Latency Percentiles & SLA -->
+          <button class="btn-metric-item latency" data-metric="latency" title="Tail latency percentiles Min to Max and SLA overlay">
+            <span class="metric-item-title">Latency Percentiles</span>
+            <span class="metric-item-subtitle">p50 - p99 &amp; SLA Overlay</span>
+          </button>
+
+          <!-- Metric 3: Engine Telemetry (Cycles / Waterfall / Scope) -->
+          <button class="btn-metric-item telemetry" data-metric="telemetry" title="Load cycles breakdown, sequence workflow steps, or fuzzing scope">
+            <span class="metric-item-title">Engine Telemetry</span>
+            <span class="metric-item-subtitle">Cycles / Workflow Steps</span>
+          </button>
+
+          <!-- Metric 4: Diagnostics & Error Triage -->
+          <button class="btn-metric-item diagnostics" data-metric="diagnostics" title="Inspect failed requests, status code pills, and payloads">
+            <span class="metric-item-title">Diagnostics &amp; Errors</span>
+            <span class="metric-item-subtitle">Status Code Distribution</span>
+          </button>
+        </div>
+      </aside>
+
+    </main>
+
+  </div>
+
+  <!-- Mounting Container for Notice, Error, and Success Info Boxes -->
+  <div id="infoBoxContainer"></div>
+
+  <script src="js/global.js"></script>
+  <script src="js/result.js"></script>
+</body>
+</html>

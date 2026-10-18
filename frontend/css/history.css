@@ -1,0 +1,240 @@
+/* ==========================================================================
+   RUN HISTORY & COMPARISON PAGE STYLES (Figma Replication)
+   ========================================================================== */
+
+/* Top Bar */
+.history-top-bar {
+  width: 100%;
+  max-width: 1140px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px 0 24px;
+  position: relative;
+  z-index: 20;
+}
+
+.history-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(217, 217, 217, 0.72);
+  backdrop-filter: blur(16px);
+  border: 3px solid #1a7f7a;
+  border-radius: 9999px;
+  padding: 8px 36px;
+  font-family: var(--font-sans);
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: #1A1A1A;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+/* Main Layout Grid */
+.history-layout {
+  width: 100%;
+  max-width: 1160px;
+  height: calc(100vh - 100px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 10px 24px;
+}
+
+/* History Logs Column */
+.history-logs-card {
+  flex: 1.1;
+  max-width: 600px;
+  height: 520px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 32px;
+}
+
+.history-card-header {
+  height: 60px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.22);
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 14px;
+  color: #1A1A1A;
+}
+
+.history-scrollable-list {
+  flex: 1;
+  padding: 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-entry-card {
+  background: #FFFFFF;
+  border-radius: 18px;
+  padding: 16px 20px;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.history-entry-card:hover {
+  transform: translateY(-2px);
+  border-color: #0A6563;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.history-entry-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.history-entry-mode {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 900;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  color: #FFFFFF;
+}
+
+.history-entry-mode.CONCURRENCY { background: #731C61; }
+.history-entry-mode.FUZZY { background: #376D33; }
+.history-entry-mode.SEQUENCE { background: #0A6563; }
+
+.history-entry-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #64748B;
+}
+
+.history-entry-metrics {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+/* Comparison Column */
+.history-compare-card {
+  flex: 0.9;
+  max-width: 500px;
+  height: 520px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 32px;
+}
+
+.compare-scrollable-body {
+  flex: 1;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.comparator-selectors-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.comparator-select-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.comparator-select-group label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 800;
+  color: #334155;
+  text-transform: uppercase;
+}
+
+.comparator-select {
+  background: #FFFFFF;
+  border: 1.5px solid rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: #0F172A;
+  outline: none;
+}
+
+/* Delta Results Grid */
+.deltas-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.delta-card {
+  background: #FFFFFF;
+  border-radius: 14px;
+  padding: 14px;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.delta-label {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #64748B;
+  text-transform: uppercase;
+}
+
+.delta-value {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.delta-value.positive { color: #16A34A; }
+.delta-value.negative { color: #DC2626; }
+.delta-value.neutral { color: #475569; }
+
+.btn-open-in-results {
+  margin-top: auto;
+  background: #0A6563;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 9999px;
+  padding: 12px;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 6px 16px rgba(10, 101, 99, 0.4);
+}
+
+.btn-open-in-results:hover {
+  background: #147A77;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(10, 101, 99, 0.55);
+}

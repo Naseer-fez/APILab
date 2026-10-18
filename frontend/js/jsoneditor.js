@@ -1,45 +1,39 @@
 /**
- * JSON EDITOR SCRIPT
- * Manages JSON textarea, live line numbers, syntax validation, COPY, and AUTO FIX.
+ * ==========================================================================
+ * JSON EDITOR CONTROLLER (Pure Vanilla ES6)
+ * ==========================================================================
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   const textarea = document.getElementById('jsonCodeInput');
-  if (!textarea) return;
+  const lineCol = document.getElementById('lineNumbersCol');
+  const syntaxBadge = document.getElementById('syntaxBadge');
+  const btnCopy = document.getElementById('btnCopy');
+  const btnAutoFix = document.getElementById('btnAutoFix');
+  const modePills = document.querySelectorAll('.btn-mode-pill');
 
-  // 1. Load existing payload or provide clean default
-  const storedJson = window.safeStorage ? window.safeStorage.getItem('api_json_payload') : null;
-  if (storedJson) {
-    textarea.value = storedJson;
-  } else {
-    const defaultTemplate = {
-      concurrency_threads: 16,
-      batch_timeout_ms: 250,
-      target_route: "/api/v1/auth/verify",
-      benchmark_cycles: 50,
-      retry_policy: {
-        max_attempts: 3,
-        backoff_multiplier: 1.5
-      }
-    };
-    textarea.value = JSON.stringify(defaultTemplate, null, 2);
-  }
+  let currentMode = window.appState.getMode();
 
-  // Initial updates
+  // Load payload from storage
+  textarea.value = window.appState.getPayload(currentMode);
   updateLineNumbers();
-  validateJsonSyntax();
+  updateSyntaxStatus();
+  updateActiveModePills(currentMode);
 
-  // Input listeners
-  textarea.addEventListener('input', () => {
-    updateLineNumbers();
-    validateJsonSyntax();
-    if (window.safeStorage) {
-      window.safeStorage.setItem('api_json_payload', textarea.value);
-    }
+  // Sync scroll between gutter and textarea
+  textarea.addEventListener('scroll', () => {
+    lineCol.scrollTop = textarea.scrollTop;
   });
 
+  // Sync line numbers & syntax on input
+  textarea.addEventListener('input', () => {
+    updateLineNumbers();
+    updateSyntaxStatus();
+    window.appState.setPayload(textarea.value, currentMode);
+  });
+
+  // Tab key indentation (2 spaces)
   textarea.addEventListener('keydown', (e) => {
-    // Support Tab key for indentation
     if (e.key === 'Tab') {
       e.preventDefault();
       const start = textarea.selectionStart;
@@ -47,146 +41,162 @@ document.addEventListener('DOMContentLoaded', () => {
       textarea.value = textarea.value.substring(0, start) + '  ' + textarea.value.substring(end);
       textarea.selectionStart = textarea.selectionEnd = start + 2;
       updateLineNumbers();
+      updateSyntaxStatus();
+      window.appState.setPayload(textarea.value, currentMode);
     }
   });
 
-  // Sync line numbers scrolling with textarea
-  textarea.addEventListener('scroll', () => {
-    const lineNumbers = document.getElementById('lineNumbersCol');
-    if (lineNumbers) {
-      lineNumbers.scrollTop = textarea.scrollTop;
+  // Mode switcher pills
+  modePills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      const mode = pill.dataset.mode;
+      currentMode = mode;
+      window.appState.setMode(mode);
+      updateActiveModePills(mode);
+
+      // Load payload for this mode
+      textarea.value = window.appState.getPayload(mode);
+      updateLineNumbers();
+      updateSyntaxStatus();
+
+      window.showInfoBox({
+        type: 'notice',
+        title: 'MODE SWITCH',
+        message: `Active engine set to <b>${mode}</b>. Switched to designated payload.`,
+        duration: 3000
+      });
+    });
+  });
+
+  // COPY Button
+  btnCopy?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(textarea.value);
+      window.showInfoBox({
+        type: 'success',
+        title: 'Success',
+        message: '📋 JSON payload copied to clipboard!',
+        duration: 3000
+      });
+    } catch (err) {
+      // Fallback
+      textarea.select();
+      document.execCommand('copy');
+      window.showInfoBox({
+        type: 'success',
+        title: 'Success',
+        message: '📋 JSON payload copied to clipboard!',
+        duration: 3000
+      });
     }
   });
+
+  // AUTO FIX Button
+  btnAutoFix?.addEventListener('click', () => {
+    handleAutoFix();
+  });
+
+  /* ==========================================================================
+     LINE NUMBER GENERATOR
+     ========================================================================== */
+  function updateLineNumbers() {
+    const lines = textarea.value.split('\n').length;
+    let numbersText = '';
+    for (let i = 1; i <= Math.max(lines, 1); i++) {
+      numbersText += i + '\n';
+    }
+    lineCol.textContent = numbersText;
+  }
+
+  function updateSyntaxStatus() {
+    const val = window.validateJsonSyntax(textarea.value);
+    if (val.valid) {
+      syntaxBadge.className = 'syntax-badge valid';
+      syntaxBadge.textContent = '● Valid JSON';
+    } else {
+      syntaxBadge.className = 'syntax-badge invalid';
+      syntaxBadge.textContent = '▲ Syntax Error';
+    }
+  }
+
+  function updateActiveModePills(mode) {
+    modePills.forEach(p => {
+      if (p.dataset.mode === mode) {
+        p.classList.add('active');
+      } else {
+        p.classList.remove('active');
+      }
+    });
+  }
+
+  /* ==========================================================================
+     AUTO FIX REGEX ENGINE
+     ========================================================================== */
+  function handleAutoFix() {
+    let text = textarea.value.trim();
+
+    if (!text) {
+      window.showInfoBox({
+        type: 'notice',
+        title: 'NOTICE',
+        message: 'Editor is empty. Enter or paste JSON to repair.',
+        duration: 3000
+      });
+      return;
+    }
+
+    let repairsMade = 0;
+
+    // Pass 1: Replace single quotes with double quotes around keys and string values
+    const singleQuoteRe = /'([^'\\]*(?:\\.[^'\\]*)*)'/g;
+    if (singleQuoteRe.test(text)) {
+      text = text.replace(singleQuoteRe, '"$1"');
+      repairsMade++;
+    }
+
+    // Pass 2: Quote unquoted object keys: { key: 123 } -> { "key": 123 }
+    const unquotedKeyRe = /([{,\s])([a-zA-Z0-9_$]+)\s*:/g;
+    if (unquotedKeyRe.test(text)) {
+      text = text.replace(unquotedKeyRe, '$1"$2":');
+      repairsMade++;
+    }
+
+    // Pass 3: Remove trailing commas: [1, 2, ] or { a: 1, }
+    const trailingCommaRe = /,(\s*[}\]])/g;
+    if (trailingCommaRe.test(text)) {
+      text = text.replace(trailingCommaRe, '$1');
+      repairsMade++;
+    }
+
+    // Pass 4: Ensure enclosing braces if looks like an object
+    if (!text.startsWith('{') && !text.startsWith('[') && text.includes(':')) {
+      text = '{\n' + text + '\n}';
+      repairsMade++;
+    }
+
+    // Try parsing the repaired string
+    try {
+      const parsed = JSON.parse(text);
+      const formatted = JSON.stringify(parsed, null, 2);
+      textarea.value = formatted;
+      updateLineNumbers();
+      updateSyntaxStatus();
+      window.appState.setPayload(formatted, currentMode);
+
+      window.showInfoBox({
+        type: 'success',
+        title: 'Success',
+        message: `<b>AUTO FIX COMPLETE</b><br/>Successfully resolved syntax flaws and formatted JSON with 2-space indentation.`,
+        duration: 4000
+      });
+    } catch (err) {
+      // Unrepairable syntax flaw
+      window.showInfoBox({
+        type: 'error',
+        title: 'AUTO FIX FAILED',
+        message: `Could not automatically repair JSON syntax.<br/><span style="color: #FFF;">Error: ${err.message}</span>`,
+        duration: 5000
+      });
+    }
+  }
 });
-
-/**
- * Generate Line Numbers based on line count
- */
-function updateLineNumbers() {
-  const textarea = document.getElementById('jsonCodeInput');
-  const lineCol = document.getElementById('lineNumbersCol');
-  if (!textarea || !lineCol) return;
-
-  const lines = textarea.value.split('\n');
-  const count = Math.max(lines.length, 1);
-  let numbersHtml = '';
-  for (let i = 1; i <= count; i++) {
-    numbersHtml += `<div>${i}</div>`;
-  }
-  lineCol.innerHTML = numbersHtml;
-}
-
-/**
- * Validate JSON syntax in real time
- */
-function validateJsonSyntax() {
-  const textarea = document.getElementById('jsonCodeInput');
-  const badge = document.getElementById('syntaxBadge');
-  const lineCol = document.getElementById('lineNumbersCol');
-  if (!textarea || !badge) return;
-
-  try {
-    JSON.parse(textarea.value);
-    badge.className = 'syntax-status-badge valid';
-    badge.innerHTML = '● Valid JSON';
-    textarea.style.color = '#78C2E9';
-    return true;
-  } catch (err) {
-    badge.className = 'syntax-status-badge invalid';
-    badge.innerHTML = '▲ Syntax Error';
-    textarea.style.color = '#F87171';
-    return false;
-  }
-}
-
-/**
- * COPY: Copies JSON code to clipboard
- */
-async function handleCopy() {
-  const textarea = document.getElementById('jsonCodeInput');
-  if (!textarea) return;
-
-  try {
-    await navigator.clipboard.writeText(textarea.value);
-    showToast('✓ JSON Copied to Clipboard!');
-  } catch (err) {
-    textarea.select();
-    document.execCommand('copy');
-    showToast('✓ JSON Copied to Clipboard!');
-  }
-}
-
-/**
- * AUTO FIX: Repairs common JSON syntax issues
- * - Fixes single quotes to double quotes
- * - Fixes unquoted keys
- * - Strips trailing commas
- * - Corrects missing braces
- */
-function handleAutoFix() {
-  const textarea = document.getElementById('jsonCodeInput');
-  if (!textarea) return;
-
-  let raw = textarea.value;
-
-  try {
-    // If it's already valid, just pretty-format it
-    const parsed = JSON.parse(raw);
-    textarea.value = JSON.stringify(parsed, null, 2);
-    updateLineNumbers();
-    validateJsonSyntax();
-    if (window.safeStorage) {
-      window.safeStorage.setItem('api_json_payload', textarea.value);
-    }
-    showToast('✓ Auto-formatted cleanly');
-    return;
-  } catch (initialErr) {
-    // Attempt automatic repair passes
-  }
-
-  // 1. Replace single quotes around values and keys with double quotes
-  let fixed = raw.replace(/'/g, '"');
-
-  // 2. Quote unquoted keys (e.g. { key: 123 } -> { "key": 123 })
-  fixed = fixed.replace(/([{,]\s*)([a-zA-Z0-9_$-]+)\s*:/g, '$1"$2":');
-
-  // 3. Remove trailing commas before } or ]
-  fixed = fixed.replace(/,\s*([}\]])/g, '$1');
-
-  // 4. Ensure enclosing brackets if missing
-  const trimmed = fixed.trim();
-  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-    fixed = '{\n' + fixed + '\n}';
-  }
-
-  try {
-    const repaired = JSON.parse(fixed);
-    textarea.value = JSON.stringify(repaired, null, 2);
-    updateLineNumbers();
-    validateJsonSyntax();
-    if (window.safeStorage) {
-      window.safeStorage.setItem('api_json_payload', textarea.value);
-    }
-    showToast('⚡ AUTO FIX APPLIED: Repaired syntax & brackets!');
-  } catch (secondErr) {
-    // Apply best-effort cleaned text
-    textarea.value = fixed;
-    updateLineNumbers();
-    validateJsonSyntax();
-    showToast('⚠️ Auto-fix performed best effort; check remaining syntax');
-  }
-}
-
-/**
- * Return to Homepage
- */
-function handleReturnHome(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  if (window.safeStorage) {
-    window.safeStorage.setSession('app_has_loaded', 'true');
-  }
-  showToast('Returning to Homepage...');
-  setTimeout(() => {
-    window.location.href = 'index.html?from=editor';
-  }, 100);
-}

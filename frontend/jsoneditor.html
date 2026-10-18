@@ -3,64 +3,84 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>API Integration - JSON Editor</title>
+  <title>JSON Editor - API Integration Platform</title>
+  
   <link rel="stylesheet" href="css/global.css">
   <link rel="stylesheet" href="css/jsoneditor.css">
 </head>
 <body>
 
-  <!-- MAIN APPLICATION VIEWPORT -->
   <div class="app-viewport">
-
-    <!-- TOP BAR: HOME BUTTON (🏠) & JSON EDITOR BADGE -->
+    
+    <!-- ==========================================================================
+         TOP BAR: HOME RETURN & TITLE BADGE
+         ========================================================================== -->
     <header class="editor-top-bar">
-      <a href="index.html?from=editor" class="btn-home" onclick="handleReturnHome(event)" title="Return to Homepage">
+      <!-- Left: Home Return Button (Suppresses loading animation on return) -->
+      <a href="index.html?from=editor" class="btn-home-circle" title="Return to Homepage">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1v-9.5z"/>
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
         </svg>
       </a>
 
-      <div class="json-editor-pill-badge">
-        <span>JSON EDITOR</span>
+      <!-- Center: Stadium Pill Badge -->
+      <div class="top-bar-center">
+        <div class="editor-badge-pill">
+          <span>JSON EDITOR</span>
+        </div>
       </div>
+
+      <div style="width: 48px;"></div> <!-- Spacer for optical balance -->
     </header>
 
-    <!-- MAIN EDITOR & BUTTONS LAYOUT -->
-    <main class="editor-page-layout">
+    <!-- ==========================================================================
+         MAIN WORKSPACE: CODE EDITOR & RIGHT ACTIONS
+         ========================================================================== -->
+    <main class="editor-layout">
       
-      <!-- LARGE CODE EDITOR CARD -->
-      <section class="editor-card-container">
-        <div class="editor-card-header">
-          <button class="btn-copy-pill" onclick="handleCopy()" title="Copy JSON payload to clipboard">COPY</button>
+      <!-- Center: Code Editor Glass Card -->
+      <section class="code-editor-card glass-card">
+        <!-- Header -->
+        <div class="code-card-header">
+          <div class="editor-status-bar">
+            <span id="syntaxBadge" class="syntax-badge valid">● Valid JSON</span>
+          </div>
+          <button id="btnCopy" class="action-pill-btn btn-copy" title="Copy raw payload to clipboard">COPY</button>
         </div>
 
-        <div class="code-editor-wrapper">
-          <div class="line-numbers-column" id="lineNumbersCol"></div>
-          <textarea class="editor-textarea" id="jsonCodeInput" spellcheck="false" placeholder="// Paste or type JSON payload here..."></textarea>
-        </div>
-
-        <div class="editor-status-bar">
-          <span class="syntax-status-badge valid" id="syntaxBadge">● Valid JSON</span>
-          <span>Schema Tolerant Parser</span>
+        <!-- Body: Synced Gutter + Monospace Textarea -->
+        <div class="code-editor-body">
+          <div id="lineNumbersCol" class="line-numbers-col">1</div>
+          <textarea id="jsonCodeInput" class="code-textarea" spellcheck="false" placeholder="Enter JSON payload..."></textarea>
         </div>
       </section>
 
-      <!-- RIGHT SIDE: CONCURRENCY, FUZZY, SEQUENCE & AUTO FIX -->
-      <aside class="editor-side-column">
-        <button class="action-pill-btn pill-concurrency" onclick="setMode('concurrency')">CONCURRENCY</button>
-        <button class="action-pill-btn pill-fuzzy" onclick="setMode('fuzzy')">FUZZY</button>
-        <button class="action-pill-btn pill-sequence" onclick="setMode('sequence')">SEQUENCE</button>
+      <!-- Right Column: Mode Pills & AUTO FIX Button -->
+      <aside class="editor-right-column">
+        <!-- Top Mode Pills Stack -->
+        <div class="mode-pills-stack">
+          <button class="btn-mode-pill concurrency" data-mode="CONCURRENCY" title="Concurrency & Load Engine">CONCURENCY</button>
+          <button class="btn-mode-pill fuzzy" data-mode="FUZZY" title="Validation & Fuzzing Engine">FUZZY</button>
+          <button class="btn-mode-pill sequence" data-mode="SEQUENCE" title="Sequence Simulation Engine">SEQUENCE</button>
+        </div>
 
-        <!-- DISTINCT FIGMA AUTO FIX BUTTON -->
-        <button class="btn-auto-fix" onclick="handleAutoFix()" title="Auto repair JSON syntax, quotes, and brackets">
-          <span>AUTO</span>
-          <span>FIX</span>
-        </button>
+        <!-- Bottom: Exact Vector AUTO FIX Button (Figma Prototype Exact) -->
+        <div class="autofix-wrap">
+          <button id="btnAutoFix" class="btn-autofix-exact" title="Automatically repair single quotes, missing key quotes, and trailing commas">
+            <svg viewBox="626 290 40 28" width="96" height="66">
+              <path d="M630.987 301H629.879L633.084 292.273H634.175L637.379 301H636.271L633.663 293.653H633.595L630.987 301ZM631.396 297.591H635.862V298.528H631.396V297.591ZM644.466 292.273H645.523V298.051C645.523 298.648 645.382 299.18 645.101 299.649C644.822 300.115 644.429 300.483 643.92 300.753C643.412 301.02 642.815 301.153 642.13 301.153C641.446 301.153 640.849 301.02 640.341 300.753C639.832 300.483 639.437 300.115 639.156 299.649C638.878 299.18 638.738 298.648 638.738 298.051V292.273H639.795V297.966C639.795 298.392 639.889 298.771 640.076 299.104C640.264 299.433 640.531 299.693 640.878 299.884C641.227 300.071 641.645 300.165 642.13 300.165C642.616 300.165 643.034 300.071 643.383 299.884C643.733 299.693 644 299.433 644.184 299.104C644.372 298.771 644.466 298.392 644.466 297.966V292.273ZM647.156 293.21V292.273H653.701V293.21H650.957V301H649.9V293.21H647.156ZM662.333 296.636C662.333 297.557 662.166 298.352 661.834 299.023C661.502 299.693 661.046 300.21 660.466 300.574C659.887 300.938 659.225 301.119 658.48 301.119C657.736 301.119 657.074 300.938 656.494 300.574C655.915 300.21 655.459 299.693 655.127 299.023C654.794 298.352 654.628 297.557 654.628 296.636C654.628 295.716 654.794 294.92 655.127 294.25C655.459 293.58 655.915 293.063 656.494 292.699C657.074 292.335 657.736 292.153 658.48 292.153C659.225 292.153 659.887 292.335 660.466 292.699C661.046 293.063 661.502 293.58 661.834 294.25C662.166 294.92 662.333 295.716 662.333 296.636ZM661.31 296.636C661.31 295.881 661.183 295.243 660.931 294.723C660.681 294.203 660.341 293.81 659.912 293.543C659.486 293.276 659.009 293.142 658.48 293.142C657.952 293.142 657.473 293.276 657.044 293.543C656.618 293.81 656.279 294.203 656.026 294.723C655.776 295.243 655.651 295.881 655.651 296.636C655.651 297.392 655.776 298.03 656.026 298.55C656.279 299.07 656.618 299.463 657.044 299.73C657.473 299.997 657.952 300.131 658.48 300.131C659.009 300.131 659.486 299.997 659.912 299.73C660.341 299.463 660.681 299.07 660.931 298.55C661.183 298.03 661.31 297.392 661.31 296.636ZM640.098 316V307.273H645.331V308.21H641.155V311.159H644.939V312.097H641.155V316H640.098ZM648.198 307.273V316H647.141V307.273H648.198ZM650.828 307.273L653.078 310.903H653.146L655.396 307.273H656.64L653.896 311.636L656.64 316H655.396L653.146 312.438H653.078L650.828 316H649.584L652.396 311.636L649.584 307.273H650.828Z" 
+                    fill="#FB0000" stroke="#000000" stroke-width="0.7" />
+            </svg>
+          </button>
+        </div>
       </aside>
 
     </main>
 
   </div>
+
+  <!-- Mounting Container for Notice, Error, and Success Info Boxes -->
+  <div id="infoBoxContainer"></div>
 
   <script src="js/global.js"></script>
   <script src="js/jsoneditor.js"></script>

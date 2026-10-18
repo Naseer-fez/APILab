@@ -1,367 +1,482 @@
-/* ========================================================
-   GLOBAL DESIGN SYSTEM (Shared across all pages)
-   Background, typography, reset, variables, loader & components
-======================================================== */
+/* ==========================================================================
+   GLOBAL DESIGN TOKENS & STYLES (Figma Prototype High-Fidelity Replication)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Plus+Jakarta+Sans:wght@500;700;800;900&display=swap');
 
 :root {
-  --color-bg-base: #000000;
-  --color-plum: #731C61;
-  --color-plum-border: #5E0C22;
-  --color-green: #376D33;
-  --color-green-border: #342222;
-  --color-teal: #0A6563;
-  --color-teal-border: #1a7f7a;
-  --color-autofix: #E50914;
-  --color-pill-nav: #D9D9D9;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: 'Figma Mono', 'Roboto Mono', 'Courier New', monospace;
+  /* Canvas & Surface Tokens */
+  --canvas-bg: #D9D9D9;
+  --glass-bg: rgba(217, 217, 217, 0.76);
+  --glass-border: rgba(255, 255, 255, 0.35);
+  --dark-glass-bg: rgba(18, 22, 28, 0.94);
+  --card-shadow: 0 20px 48px rgba(0, 0, 0, 0.55);
+
+  /* Top Triangle Navbar Palette */
+  --color-concurrency: #731C61;
+  --stroke-concurrency: #5E0C22;
+  --color-fuzzy: #376D33;
+  --stroke-fuzzy: #342222;
+  --color-sequence: #0A6563;
+  --stroke-sequence: #5E0C22;
+  --navbar-pill-border: #1a7f7a;
+
+  /* Right Action Pills Palette (homepagesvg.svg Exact) */
+  --pill-run-bg: #73412A;
+  --pill-run-border: #67752C;
+  --pill-result-bg: #2A6B73;
+  --pill-result-border: #753B2C;
+  --pill-history-bg: #542A73;
+  --pill-history-border: #2C754E;
+  --pill-editor-bg: #732A2A;
+  --pill-editor-border: #2C6975;
+
+  /* Auxiliary Buttons (homepagesvg.svg & jsoneditorsvg.svg Exact) */
+  --btn-format-bg: #2A734E;
+  --btn-format-border: #2C3175;
+  --btn-paste-bg: #2A6B73;
+  --btn-paste-border: #753B2C;
+  --btn-copy-bg: #635927;
+  --btn-copy-border: #753B2C;
+  --btn-autofix-bg: #FB0000;
+
+  /* Typography */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
-* {
+/* ==========================================================================
+   VIEWPORT LOCK & RESET
+   ========================================================================== */
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
 html, body {
-  height: 100%;
-  width: 100%;
-  overflow: hidden; /* Page never scrolls - inner JSON area scrolls */
-}
-
-body {
-  background: var(--color-bg-base) url("../assets/editsBackground.png") no-repeat center center / cover;
-  background-attachment: fixed;
-  font-family: var(--font-sans);
-  color: #ffffff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* ========================================================
-   APP CONTAINER / SCREEN ADAPTATION (Space items relatively)
-======================================================== */
-.app-viewport {
-  width: 100%;
-  max-width: 1200px;
+  width: 100vw;
   height: 100vh;
-  padding: 24px 36px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  z-index: 1;
-}
-
-/* ========================================================
-   1. LOADER SCREEN ANIMATION ("hi" drop + zoom)
-======================================================== */
-.no-loader #loaderScreen,
-.no-loader .loader-screen {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-.loader-screen {
-  position: fixed;
-  inset: 0;
-  background: var(--color-bg-base) url("../assets/editsBackground.png") no-repeat center center / cover;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  animation: screenFadeOut 0.5s ease 1.85s forwards;
-  pointer-events: none !important; /* CRITICAL: Never block clicks */
-}
-
-.loader-container {
-  width: 90%;
-  max-width: 720px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform-origin: center center;
-  animation: zoomIntoWebsite 0.55s cubic-bezier(0.4, 0, 0.2, 1) 1.25s forwards;
-  pointer-events: none !important;
-}
-
-.loader-svg {
-  width: 100%;
-  height: auto;
-  display: block;
-  overflow: visible;
-  pointer-events: none !important;
-}
-
-#step0 {
-  display: none;
-}
-
-#step1, #step2, #step3, #step4, #step5, #step6, #step7 {
-  opacity: 0;
-  animation: 
-    vectorDropIn 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.25) forwards,
-    vectorReDrop 0.4s cubic-bezier(0.55, 0.055, 0.675, 0.19) 1.25s forwards;
-}
-
-#step1 { animation-delay: 0.0s, 1.25s; }
-#step2 { animation-delay: 0.1s, 1.25s; }
-#step3 { animation-delay: 0.2s, 1.25s; }
-#step4 { animation-delay: 0.3s, 1.25s; }
-#step5 { animation-delay: 0.4s, 1.25s; }
-#step6 { animation-delay: 0.5s, 1.25s; }
-#step7 { animation-delay: 0.35s, 1.25s; }
-
-@keyframes vectorDropIn {
-  0% {
-    opacity: 0;
-    transform: translateY(-90px);
-  }
-  75% {
-    opacity: 1;
-    transform: translateY(5px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes vectorReDrop {
-  0% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(110px);
-  }
-}
-
-@keyframes zoomIntoWebsite {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(3.8);
-    opacity: 0;
-  }
-}
-
-@keyframes screenFadeOut {
-  to {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none !important;
-  }
-}
-
-/* ========================================================
-   2. TOP PILL NAVBAR WITH 3 TRIANGLES (Pop-out on active)
-======================================================== */
-.top-nav-container {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  margin-bottom: 12px;
-  animation: navSlideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes navSlideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.pill-navbar {
-  position: relative;
-  width: 440px;
-  height: 54px;
-  background: var(--color-pill-nav);
-  border: 3px solid var(--color-teal-border);
-  border-radius: 9999px;
-  box-shadow: 0 14px 32px 8px rgba(0, 0, 0, 0.65), 0 4px 10px rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: visible; /* Allows active button to pop out */
+  overflow: hidden; /* Screen Adaptation: Page scrolling is locked */
+  font-family: var(--font-sans);
+  color: #FFFFFF;
+  background-color: #121418;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   user-select: none;
 }
 
-.nav-triangles-svg {
-  width: 100%;
-  height: 100%;
+/* Abstract Texture Background */
+.app-viewport {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-image: url('../assets/backgorundjpeg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* ==========================================================================
+   TOP PILL NAVBAR & 3D POP-OUT
+   ========================================================================== */
+.pill-navbar-container {
+  margin-top: 18px;
+  position: relative;
+  z-index: 50;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
+}
+
+.pill-navbar-svg {
+  width: 440px;
+  height: 62px;
+  overflow: visible;
   display: block;
-  overflow: visible; /* Allows active shape to elevate outside */
+}
+
+.nav-pill-base {
+  fill: var(--canvas-bg);
+  stroke: var(--navbar-pill-border);
+  stroke-width: 3.5px;
+  rx: 31px;
 }
 
 .nav-btn {
   cursor: pointer;
-  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
-              opacity 0.25s ease,
-              filter 0.25s ease;
-  transform-origin: center center;
+  transform-origin: center;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              filter 0.3s ease, 
+              opacity 0.3s ease;
 }
 
-#btn-concurrency .triangle-shape {
-  fill: var(--color-plum);
-  stroke: var(--color-plum-border);
-  stroke-width: 2.5;
-}
-
-#btn-fuzzy .triangle-shape {
-  fill: var(--color-green);
-  stroke: var(--color-green-border);
-  stroke-width: 3.5;
-}
-
-#btn-sequence .triangle-shape {
-  fill: var(--color-teal);
-  stroke: var(--color-plum-border);
-  stroke-width: 2.5;
-}
-
-.nav-btn text {
-  fill: #FFFFFF;
-  font-family: var(--font-sans);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  text-anchor: middle;
-  dominant-baseline: central;
-  pointer-events: none;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
-}
-
-.nav-btn:hover:not(.active) {
-  opacity: 0.85 !important;
-  filter: brightness(1.1);
-  transform: translateY(-2px) scale(1.02);
-}
-
-/* Active Button: Pops out prominently on top */
+/* Pop-out 3D Elevation */
 .nav-btn.active {
-  transform: translateY(-7px) scale(1.08);
-  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.95))
-          drop-shadow(0 0 10px rgba(255, 255, 255, 0.4))
-          brightness(1.28);
-  opacity: 1 !important;
+  transform: translateY(-8px) scale(1.08);
+  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 10px rgba(255, 255, 255, 0.4)) brightness(1.28);
 }
 
-.nav-btn.active .triangle-shape {
+.nav-btn.active path {
   stroke-width: 4px;
 }
 
 .nav-btn.active text {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 900;
-  letter-spacing: 1.1px;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95);
+  letter-spacing: 1.2px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
 }
 
-/* Inactive Buttons: Recessed, dimmed, lower */
+/* Inactive Triangles */
 .nav-btn.inactive {
   transform: translateY(3px) scale(0.96);
-  opacity: 0.48 !important;
-  filter: brightness(0.72) grayscale(20%);
+  opacity: 0.52 !important;
+  filter: brightness(0.72) grayscale(25%);
 }
 
-/* ========================================================
-   3. EXACT FIGMA ACTION BUTTONS (RUN, RESULT, HISTORY, EDITOR)
-======================================================== */
+.nav-btn text {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  fill: #FFFFFF;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+/* Hover effect on triangle buttons */
+.nav-btn:hover:not(.active) {
+  opacity: 0.85 !important;
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.15);
+}
+
+/* ==========================================================================
+   GLASS CARDS & CONTAINERS
+   ========================================================================== */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 28px;
+  border: 1.5px solid var(--glass-border);
+  box-shadow: var(--card-shadow);
+  position: relative;
+}
+
+/* ==========================================================================
+   STADIUM ACTION PILLS (RUN, RESULT, HISTORY, EDITOR, FORMAT, PASTE)
+   ========================================================================== */
 .action-pill-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 28px;
-  min-width: 155px;
   border-radius: 9999px;
-  border: 3px solid;
   font-family: var(--font-sans);
-  font-size: 14px;
   font-weight: 800;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: #EAEAEA;
-  cursor: pointer;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: #FFFFFF;
   text-decoration: none;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55), inset 0 1px 2px rgba(255, 255, 255, 0.2);
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), 
+  border-style: solid;
+  border-width: 3.5px;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.2), 
               filter 0.2s ease, 
               box-shadow 0.2s ease;
   user-select: none;
 }
 
+/* Button Hover: Fill Brightness Only, Stroke Remains Fixed */
 .action-pill-btn:hover {
   transform: translateY(-2px) scale(1.03);
-  filter: brightness(1.2);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.65);
+  filter: brightness(1.22);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55);
 }
 
 .action-pill-btn:active {
   transform: translateY(1px) scale(0.98);
+  filter: brightness(0.95);
 }
 
-/* Exact Figma colors from user screenshot */
-.pill-run,
-.pill-concurrency {
-  background: #564027; /* Earthy bronze brown */
-  border-color: #376D33; /* Forest green */
+/* Individual Pill Color Schemes (Figma Exact) */
+.btn-run {
+  background-color: var(--pill-run-bg);
+  border-color: var(--pill-run-border);
+  width: 130px;
+  height: 48px;
 }
 
-.pill-result,
-.pill-fuzzy {
-  background: #1B5963; /* Slate teal */
-  border-color: #782D2D; /* Rust red */
+.btn-result {
+  background-color: var(--pill-result-bg);
+  border-color: var(--pill-result-border);
+  width: 130px;
+  height: 48px;
+  position: relative;
 }
 
-.pill-history,
-.pill-sequence {
-  background: #482357; /* Deep plum purple */
-  border-color: #2B6935; /* Leaf green */
+.btn-history {
+  background-color: var(--pill-history-bg);
+  border-color: var(--pill-history-border);
+  width: 130px;
+  height: 48px;
 }
 
-.pill-editor,
-.pill-edit {
-  background: #6B2A30; /* Wine burgundy */
-  border-color: #146665; /* Deep teal */
+.btn-editor {
+  background-color: var(--pill-editor-bg);
+  border-color: var(--pill-editor-border);
+  width: 130px;
+  height: 48px;
 }
 
-/* Toast message for feedback */
-.toast-notice {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%) translateY(100px);
-  background: rgba(18, 22, 28, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(12px);
-  color: #fff;
-  padding: 12px 24px;
+.btn-format {
+  background-color: var(--btn-format-bg);
+  border-color: var(--btn-format-border);
+  padding: 6px 26px;
+  font-size: 12px;
+  border-width: 3px;
+}
+
+.btn-paste {
+  background-color: var(--btn-paste-bg);
+  border-color: var(--btn-paste-border);
+  padding: 6px 26px;
+  font-size: 12px;
+  border-width: 3px;
+}
+
+/* Notification Badge on Result Button */
+.notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #E50914;
+  color: #FFFFFF;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 900;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  animation: badgePulse 2s infinite ease-in-out;
+}
+
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+}
+
+/* ==========================================================================
+   HOME BUTTON CIRCLE (FOR HEADER PAGES)
+   ========================================================================== */
+.btn-home-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(217, 217, 217, 0.85);
+  border: 3px solid #1a7f7a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  text-decoration: none;
+}
+
+.btn-home-circle:hover {
+  transform: scale(1.08) translateY(-2px);
+  filter: brightness(1.2);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.6);
+}
+
+.btn-home-circle svg {
+  width: 24px;
+  height: 24px;
+  fill: #1A1A1A;
+}
+
+/* ==========================================================================
+   CUSTOM INNER SCROLLBARS (PAGE SCROLL LOCKED, SECTION SCROLL ONLY)
+   ========================================================================== */
+.custom-scrollable {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(10, 101, 99, 0.65) transparent;
+}
+
+.custom-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(10, 101, 99, 0.65);
   border-radius: 9999px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
-  z-index: 10000;
-  opacity: 0;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-  pointer-events: none;
 }
 
-.toast-notice.show {
-  transform: translateX(-50%) translateY(0);
-  opacity: 1;
+.custom-scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(26, 127, 122, 0.9);
+}
+
+/* ==========================================================================
+   INFO BOXES SYSTEM (NOTICE, ERROR, SUCCESS from infoboxes.svg)
+   ========================================================================== */
+#infoBoxContainer {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  pointer-events: none;
+  max-width: 460px;
+}
+
+.info-box-wrapper {
+  pointer-events: auto;
+  animation: infoBoxSlideIn 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.25) forwards;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.info-box-wrapper.dismissing {
+  opacity: 0;
+  transform: translateY(-20px) scale(0.92);
+}
+
+@keyframes infoBoxSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Base Card Geometry (infoboxes.svg Exact) */
+.info-box-card {
+  position: relative;
+  width: 440px;
+  padding: 16px 20px 20px 20px;
+  border-radius: 48px;
+  background: #D9D9D9;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75);
+  overflow: hidden;
+}
+
+/* Header Bar */
+.info-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.info-box-title {
+  background: #FFFFFF;
+  border-radius: 9999px;
+  padding: 4px 18px;
+  font-family: var(--font-sans);
+  font-weight: 900;
+  font-size: 13.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.info-box-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 2px 8px;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.info-box-close:hover {
+  transform: scale(1.25);
+}
+
+/* Inner Content Rect */
+.info-box-body {
+  border-radius: 20px;
+  padding: 18px 20px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.55;
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+/* --- Type 1: NOTICE (infoboxes.svg Top Card) --- */
+.info-box-card.notice .info-box-title {
+  color: #0D2D1C;
+}
+
+.info-box-card.notice .info-box-close {
+  color: #0D2D1C; /* Dark forest green 'x' stroke1_38_91 */
+  text-shadow: 0 0 6px rgba(13, 45, 28, 0.4);
+}
+
+.info-box-card.notice .info-box-body {
+  background: rgba(219, 223, 140, 0.72); /* #DBDF8C 67% opacity */
+  color: #2D150D;
+  border: 1.5px solid rgba(13, 45, 28, 0.25);
+}
+
+/* --- Type 2: ERROR (infoboxes.svg Middle Card) --- */
+.info-box-card.error .info-box-title {
+  color: #2D150D;
+}
+
+.info-box-card.error .info-box-close {
+  color: #2D150D; /* Rust / espresso chalk 'x' stroke5_38_91 */
+  text-shadow: 0 0 6px rgba(45, 21, 13, 0.4);
+}
+
+.info-box-card.error .info-box-body {
+  background: rgba(83, 32, 38, 0.78); /* #532026 67% opacity */
+  color: #FFE5E8;
+  border: 1.5px solid rgba(45, 21, 13, 0.35);
+}
+
+/* --- Type 3: SUCCESS (infoboxes.svg Bottom Card) --- */
+.info-box-card.success .info-box-title {
+  color: #0D142D;
+}
+
+.info-box-card.success .info-box-close {
+  color: #0D142D; /* Midnight navy chalk 'x' stroke9_38_91 */
+  text-shadow: 0 0 6px rgba(13, 20, 45, 0.4);
+}
+
+.info-box-card.success .info-box-body {
+  background: rgba(48, 69, 10, 0.82); /* #30450A 67% opacity */
+  color: #F2FFE8;
+  border: 1.5px solid rgba(13, 20, 45, 0.35);
 }

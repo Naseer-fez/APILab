@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Run History &amp; Comparison - API Integration Platform</title>
+
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/history.css">
+</head>
+<body>
+
+  <div class="app-viewport">
+    
+    <!-- ==========================================================================
+         TOP BAR: HOME RETURN & TITLE BADGE
+         ========================================================================== -->
+    <header class="history-top-bar">
+      <!-- Left: Home Return Button -->
+      <a href="index.html?from=history" class="btn-home-circle" title="Return to Homepage">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+        </svg>
+      </a>
+
+      <!-- Center: Title Stadium Pill -->
+      <div class="history-badge-pill">
+        <span>RUN HISTORY</span>
+      </div>
+
+      <div style="width: 48px;"></div> <!-- Spacer for balance -->
+    </header>
+
+    <!-- ==========================================================================
+         MAIN LAYOUT: RUN LOGS & A/B COMPARATOR
+         ========================================================================== -->
+    <main class="history-layout">
+      
+      <!-- Left: Historical Runs List Card -->
+      <section class="history-logs-card glass-card">
+        <div class="history-card-header">
+          <span>Recent Execution Runs</span>
+          <span style="font-family: monospace; font-size: 11px; color: #64748B;">Stored in localStorage</span>
+        </div>
+
+        <div id="historyList" class="history-scrollable-list custom-scrollable">
+          <!-- Dynamically populated by history.js -->
+        </div>
+      </section>
+
+      <!-- Right: A/B Run Comparator Card -->
+      <section class="history-compare-card glass-card">
+        <div class="history-card-header">
+          <span>A/B Run Comparator</span>
+          <span style="font-family: monospace; font-size: 11px; color: #0A6563;">Performance Deltas</span>
+        </div>
+
+        <div class="compare-scrollable-body custom-scrollable">
+          <!-- Selectors -->
+          <div class="comparator-selectors-row">
+            <div class="comparator-select-group">
+              <label for="selectRunA">Baseline (Run A):</label>
+              <select id="selectRunA" class="comparator-select"></select>
+            </div>
+            <div class="comparator-select-group">
+              <label for="selectRunB">Comparison (Run B):</label>
+              <select id="selectRunB" class="comparator-select"></select>
+            </div>
+          </div>
+
+          <!-- Calculated Deltas Grid -->
+          <div class="deltas-grid">
+            <div class="delta-card">
+              <span class="delta-label">&Delta; Avg Latency</span>
+              <div id="deltaLatency" class="delta-value">0ms</div>
+            </div>
+            <div class="delta-card">
+              <span class="delta-label">&Delta; Success Rate</span>
+              <div id="deltaSuccess" class="delta-value">0%</div>
+            </div>
+            <div class="delta-card">
+              <span class="delta-label">&Delta; Total Requests</span>
+              <div id="deltaRequests" class="delta-value">0 reqs</div>
+            </div>
+            <div class="delta-card">
+              <span class="delta-label">&Delta; Error Count</span>
+              <div id="deltaErrors" class="delta-value">0 errors</div>
+            </div>
+          </div>
+
+          <!-- Action Button -->
+          <button id="btnOpenResult" class="btn-open-in-results" title="Open selected baseline run in full Results &amp; Metrics dashboard">
+            Open Baseline in Results &gt;
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- Mounting Container for Notice, Error, and Success Info Boxes -->
+  <div id="infoBoxContainer"></div>
+
+  <script src="js/global.js"></script>
+  <script src="js/history.js"></script>
+</body>
+</html>
