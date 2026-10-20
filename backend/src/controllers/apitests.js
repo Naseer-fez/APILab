@@ -6,6 +6,7 @@ import { filemanager } from '../services/apitests_file.js';
 import { sendfiles } from '../services/apitests_stream.js';
 import { resultmetric } from '../services/resultsmetric.js';
 import { log } from '../utils/logger.js';
+import { savehistory } from '../services/resulthistory.js';
 //gibberish is the speical symbol to diffrenct the user and server data
 
 const resultid = "api_test";
@@ -16,6 +17,7 @@ const apitestsController = async (req, res) => {
     // console.log("Data is: ", data.values);
     // Time to validate this now 
     if (data[0] === -1 || data[0] === 0) {
+        savehistory({ message: data[1], data: data, success: "FAIL" }, "api_test");
         return res.status(data[2]).json({
             message: data[1],
             data: data
@@ -56,8 +58,10 @@ const apitestsController = async (req, res) => {
     // const log = async (messageinfo, message, level = "INFO", filename = null)
     // log("API Test Controller", {finalresult: finalresult}, "INFO");
     const formatted = resultmetric.formatResponse(finalresult);
+    const msg = "API Test completed successfully"
+    savehistory({ message: msg, metrics: formatted.metrics, data: data[1], success: "PASS" }, "api_test");
     return res.status(200).json({
-        message: "API Test completed successfully",
+        message: msg,
         metrics: formatted.metrics,
         data: data[1]
     });
@@ -120,7 +124,7 @@ const sendrequest = async (link, method, headers, obj = {}, file = null, fieldna
 
         }
         await resultmetric.datacalulator(resultid, body, true);
-         await metricanalysis(result);
+        await metricanalysis(result);
         return {
             ok: result.ok,
             status: result.status,

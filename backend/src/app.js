@@ -22,7 +22,9 @@ app.use('/api', concurrencetestRoutes);
 // sequence test route
 import sequencetestRoutes from './routes/sequencetest.js';
 app.use('/api', sequencetestRoutes);
-
+// result history route
+import resulthistoryRoutes from './routes/resulthistory.js';
+app.use('/api', resulthistoryRoutes);
 
 //importing the test routes
 import testRoutes from '../tests/sampleendpoint.js';
@@ -39,7 +41,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const frontendPath = path.join(__dirname, '../../frontend/dist');
+const frontendPath = path.join(__dirname, '../../frontend/');
 app.use(express.static(frontendPath));
 
 

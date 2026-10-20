@@ -1,11 +1,12 @@
 import { parsebody } from '../services/concurencytest.js';
-import {requestengine} from '../services/concurencyengine.js';
+import { requestengine } from '../services/concurencyengine.js';
 import { resultmetric } from '../services/resultsmetric.js';
+import { savehistory } from '../services/resulthistory.js';
 
 const concurrencetestcontroller = async (req, res) => {
-    
 
-    const bodydata = await parsebody(req.body,req.files); // we have pased the body data and now we can use it to send the request to the endpoint
+
+    const bodydata = await parsebody(req.body, req.files); // we have pased the body data and now we can use it to send the request to the endpoint
 
     // console.log("The body data is ", bodydata);
     if (bodydata[0] === 0) {
@@ -20,6 +21,7 @@ const concurrencetestcontroller = async (req, res) => {
         return res.status(enginedata[2]).json({ message: enginedata[1] });
     }
     const formatted = resultmetric.formatResponse(enginedata[1]);
+    savehistory(formatted, "concurrency_test");
     return res.status(200).json({
         message: "Concurrency test completed successfully",
         metrics: formatted.metrics,
@@ -27,7 +29,7 @@ const concurrencetestcontroller = async (req, res) => {
     });
 }
 
-const concurrencerequest = async ({ link, method, headers, data, bodytosend,file,isfile,blobmode=false }) => {
+const concurrencerequest = async ({ link, method, headers, data, bodytosend, file, isfile, blobmode = false }) => {
     // now the first thing is we need one function to send one requests 
     var isget = false;
     if (method == "GET") {
@@ -47,10 +49,12 @@ const concurrencerequest = async ({ link, method, headers, data, bodytosend,file
         isfile: isfile,
         blobmode: blobmode
     }// so that we can send the data to the sendrequest function and get the response from it
-    const reqdata = await requestengine({ link, method, headers,
-         bodytosend, isget,data, file, isfile ,blobmode});
+    const reqdata = await requestengine({
+        link, method, headers,
+        bodytosend, isget, data, file, isfile, blobmode
+    });
     return reqdata;
-    
+
     //mostly will send a list ig
 
 

@@ -6,6 +6,7 @@ import { sendtheevent } from '../services/sequencetestsse.js';
 import { openAsBlob } from 'node:fs';
 import path from 'node:path';
 import { resultmetric } from '../services/resultsmetric.js';
+import {savehistory} from '../services/resulthistory.js';
 
 const resultid = "sequence_test"; //This is the id for the result metric to store the results in the result metric service
 
@@ -13,6 +14,7 @@ const sequencetestController = async (req, res) => {
     // console.log("Received request with body: ", req.body);
     var totalrequestsdata = [];
     if (!req.body) {
+        savehistory({ message: 'No body provided For the request', success: "FAIL" }, "sequence_test");
         return res.status(400).json({ message: 'No body provided For the request' });
         //Simple but effective validation to check if the body is provided or not
     }
@@ -26,6 +28,7 @@ const sequencetestController = async (req, res) => {
     var globaldata = await parsebody(reqbody[0], req.file, {}, true);
     // console.log("After parsing the body for request number 1:", globaldata);
     if (globaldata[0] === 0) {
+        savehistory({ message: globaldata[1], success: "FAIL" }, "sequence_test");
         return res.status(400).json({ message: globaldata[1] });
     }
     totalrequestsdata.push(globaldata[1][0]); //We will push the parsed body to the totalrequestsdata array
@@ -41,6 +44,7 @@ const sequencetestController = async (req, res) => {
 
         if (body[0] === 0) {
             // console.log("Error in parsing the body for request number ", reqnum + 1, ":", body[2]);
+            savehistory({ message: body[1], success: "FAIL" }, "sequence_test");
             return res.status(400).json({ message: body[1] });
         }
         totalrequestsdata.push(body[1]); //We will push the parsed body to the totalrequestsdata array
@@ -59,6 +63,7 @@ const sequencetestController = async (req, res) => {
     const message = finalresult[0] === 1
         ? "Sequence test completed successfully"
         : (finalresult[1]?.conditionmessage?.message || finalresult[1]?.message || "Sequence test failed");
+    savehistory(formatted, "sequence_test");
     return res.status(finalresult[2]).json({
         message,
         metrics: formatted.metrics,
