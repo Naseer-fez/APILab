@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { runApiTest, runConcurrencyTest, runSequenceTest } from '../backend/manager.js';
+import { runApiTest, runConcurrencyTest, runSequenceTest, runHistoryResults } from '../backend/manager.js';
 import startServer from '../backend/src/server.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,7 +10,8 @@ const args = process.argv.slice(2);
 const runtests = {
     api: runApiTest,
     concurrency: runConcurrencyTest,
-    sequence: runSequenceTest
+    sequence: runSequenceTest,
+    results: runHistoryResults
 };
 
 const startui = (port = 3000) => {
@@ -52,8 +53,22 @@ const main = async () => {
         console.log("  concurrency <payload>  Run Concurrency test with the provided payload");
         console.log("  sequence <payload>     Run Sequence test with the provided payload");
         console.log("  payload should be a JSON string or a path to a JSON file");
+        console.log("  results <query>      Fetch historical test results with the provided payload");
+        console.log("  for query help use 'query'");
         console.log("  start <port>           Start the server and UI");
         console.log("  help                   Show this help message");
+    }
+    else if (command === 'query') {
+        const validQueries = ["resultno","success", "failure", "message", "metrics", "data"]
+        console.log("Query Usage: node cli.js results <query>");
+        console.log("The query takes normal inputs")
+        console.log("Valid queries are:");
+        validQueries.forEach((query) => {
+            console.log(`  - ${query}`);
+        });
+        console.log("Example: node cli.js results success");
+        console.log("This will fetch all historical test results that were successful.");
+        console.log("reulstno will fetch the result by result number");
     }
     else {
         console.error("Invalid command. Use 'help' for usage information.");
