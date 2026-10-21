@@ -75,55 +75,7 @@ example of data
 }
 
 
-______________________________________________________________________________
-Now for the filetests
 
-will have the same structure as the regular tests
-key will take the file name  for the server
-ex : "avatar":{
-"type":"image",
-"value": [] optional filed this takes the file extenstions
-this will be defaulted to the file type if not provided
-"range":[] this is the size of the files in bytes
-by default range starts from 0 to 5mb 
-Now casue this are fuzzy tests 
-the values can contains the file paths also 
-for say want to test on specific files then it cna be used
-if the type is "others" 
-Then the values you can add the file paths 
-The range will be ignored in this case if the range is empty 
-but if the range is provided then a first the file will be sent and then 
-random bytes will be sent to the server to see how it will handele the data The random bytes will one mb of extra data
-You can add any number of files in the values array 
-
-//If paths dont exist then the files which are found will be sent 
-**NOTE** If request is zero or negative then the total length of the data[values * range] will be total reqs sent
-
-}
-Example of data 
-{
-    link: "http://127.0.0.1:3000/tests/filetest",
-    endpoint: "",
-    endpointavailable: false,
-    method: "POST",
-    requests: 0,
-    headers: {},
-    fileavailable: true,
-    data: {
-        "file": {
-            //lets send a valid type now
-            type: "text",
-            value: [],
-            range: [2000, 4000, 1000],
-        },
-        "data": {
-            //lets send a valid type now
-            type: "text",
-            value: [],
-            range: [2000, 4000, 1000],
-        }
-    }
-}
 */
 
 

@@ -19,13 +19,18 @@ const getresultsController = (req, res) => {
         data[field] = getdata(req, field);
     }
 
+    const requestedFields = resultfields.filter(field => data[field] !== undefined);
+    if (requestedFields.length === 0) {
+        const fullRecord = gethistorydata(data.resultno, null);
+        if (fullRecord[2] !== 200) return res.status(fullRecord[2]).json({ message: fullRecord[1].message });
+        return res.status(200).json(fullRecord[1].data);
+    }
+
     var historyresult = {};
-    for (const field of resultfields) {
-        var result = {}
-        if (data[field] == undefined) continue;
-        result[field] = gethistorydata(data.resultno, field);
-        if (result[field][2] !== 200) return res.status(result[field][2]).json({ message: result[field][1].message });
-        historyresult[field] = result[field][1].data;
+    for (const field of requestedFields) {
+        const result = gethistorydata(data.resultno, field);
+        if (result[2] !== 200) return res.status(result[2]).json({ message: result[1].message });
+        historyresult[field] = result[1].data;
     }
 
     return res.status(200).json(historyresult);
@@ -62,7 +67,7 @@ const readallhistory = (field = null) => {
     let page = 1;
     let allhistory = [];
     const validfield = ["message", "success", "failure", "metrics", "data"];
-    if (field === null || !validfield.includes(field)) {
+    if (field !== null && !validfield.includes(field)) {
         return [0, { message: `Invalid field: ${field}. Valid fields are: ${validfield.join(', ')}` },
             400];
     }
@@ -75,12 +80,13 @@ const readallhistory = (field = null) => {
         if (!filecontent) {
             break;
         }
+        const history = JSON.parse(filecontent);
         if (!field) {
             allhistory.push(...history);
         } else if (field === "success") {
-            allhistory.push(...history.filter(item => item.success === "PASS"));
+            allhistory.push(...history.filter(item => item.success === true || item.success === "PASS"));
         } else if (field === "failure") {
-            allhistory.push(...history.filter(item => item.success === "FAIL"));
+            allhistory.push(...history.filter(item => item.success === false || item.success === "FAIL"));
         } else {
             allhistory.push(...history.map(item => item[field]));
         }

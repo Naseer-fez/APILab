@@ -23,8 +23,8 @@ app.use('/api', concurrencetestRoutes);
 import sequencetestRoutes from './routes/sequencetest.js';
 app.use('/api', sequencetestRoutes);
 // result history route
-import resulthistoryRoutes from './routes/resulthistory.js';
-app.use('/api', resulthistoryRoutes);
+import resultsRoutes from './routes/results.js';
+app.use('/api', resultsRoutes);
 
 //importing the test routes
 import testRoutes from '../tests/sampleendpoint.js';
