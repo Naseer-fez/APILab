@@ -140,8 +140,22 @@ function initJsonWorkspace() {
   });
 
   // Chain controls
-  document.getElementById('btnAddPair')?.addEventListener('click', () => addChainRow('', ''));
-  document.getElementById('btnAddBranch')?.addEventListener('click', () => addChainRow('branch_' + Date.now().toString().slice(-4), { mode: 'strict' }));
+  document.getElementById('btnAddPair')?.addEventListener('click', () => {
+    const chainBody = document.getElementById('chainBody');
+    if (chainBody) {
+      renderKvRow('new_key', 'value', chainBody, false);
+      serializeChainTreeToManual();
+    }
+  });
+
+  document.getElementById('btnAddBranch')?.addEventListener('click', () => {
+    const chainBody = document.getElementById('chainBody');
+    if (chainBody) {
+      renderBranchNode('new_branch', { key: 'value' }, chainBody, false);
+      serializeChainTreeToManual();
+    }
+  });
+
   document.getElementById('btnMainFold')?.addEventListener('click', toggleMainBranchFold);
 }
 
@@ -175,7 +189,7 @@ function switchJsonView(targetView) {
     activeJsonView = 'chain';
   } else {
     // Serialize chain rows to manual JSON
-    serializeChainRowsToManual();
+    serializeChainTreeToManual();
     chainView.style.display = 'none';
     manualView.style.display = 'flex';
     tabChain.classList.remove('active');
@@ -199,40 +213,58 @@ function updateSyntaxBadge() {
   }
 }
 
-/* --- Chain Rows Renderer --- */
+/* ==========================================================================
+   HIERARCHICAL <> CHAIN BRANCH & TREE EDITOR
+   ========================================================================== */
 function renderChainRows(obj) {
   const chainBody = document.getElementById('chainBody');
   if (!chainBody) return;
   chainBody.innerHTML = '';
+  renderChainTree(obj, chainBody);
+}
 
-  if (typeof obj !== 'object' || obj === null) {
-    addChainRow('value', String(obj));
-    return;
-  }
-
-  // Flatten top-level keys for visual stadium pills
-  for (const [k, v] of Object.entries(obj)) {
-    const valString = typeof v === 'object' ? JSON.stringify(v) : String(v);
-    addChainRow(k, valString);
+function renderChainTree(data, container) {
+  if (Array.isArray(data)) {
+    data.forEach((item, index) => {
+      if (item !== null && typeof item === 'object') {
+        renderBranchNode(index, item, container, true);
+      } else {
+        renderKvRow(index, item, container, true);
+      }
+    });
+  } else if (data !== null && typeof data === 'object') {
+    Object.entries(data).forEach(([key, val]) => {
+      if (val !== null && typeof val === 'object') {
+        renderBranchNode(key, val, container, false);
+      } else {
+        renderKvRow(key, val, container, false);
+      }
+    });
+  } else {
+    renderKvRow('value', data, container, false);
   }
 }
 
-function addChainRow(key = '', val = '') {
-  const chainBody = document.getElementById('chainBody');
-  if (!chainBody) return;
-
+/* --- Render Primitive Key-Value Row with Branch Conversion --- */
+function renderKvRow(key, val, container, isArrayItem = false) {
   const row = document.createElement('div');
   row.className = 'kv-row';
+  row.dataset.rowType = 'primitive';
+  row.dataset.isArrayItem = isArrayItem ? 'true' : 'false';
 
-  const valDisplay = typeof val === 'object' ? JSON.stringify(val) : String(val);
+  const valDisplay = val === null ? 'null' : String(val ?? '');
 
   row.innerHTML = `
-    <button class="btn-bracket-icon" title="Toggle branch fold">&lt;&gt;</button>
-    <input type="text" class="pill-input-key" value="${escapeHtml(key)}" placeholder="KEY" />
+    <button class="btn-bracket-icon" title="Toggle fold">&lt;&gt;</button>
+    ${isArrayItem 
+      ? `<span class="pill-input-key" style="width: auto; padding: 6px 14px; opacity: 0.75;">[${key}]</span>` 
+      : `<input type="text" class="pill-input-key" value="${escapeHtml(key)}" placeholder="KEY" />`
+    }
     <span class="row-colon">:</span>
     <input type="text" class="pill-input-value" value="${escapeHtml(valDisplay)}" placeholder="VALUE" />
-    <span class="folded-badge">&lt;&gt; ... [branch folded]</span>
-    <button class="btn-remove-row" title="Delete row">&times;</button>
+    <span class="folded-badge">&lt;&gt; ... [folded]</span>
+    <button class="btn-add-subbranch" title="Add branches to this key">&lt;&gt; + Branch</button>
+    <button class="btn-remove-row" title="Delete key">&times;</button>
   `;
 
   // Fold toggle
@@ -243,63 +275,172 @@ function addChainRow(key = '', val = '') {
     row.classList.remove('row-reduced');
   });
 
+  // Convert key-value into a nested branch
+  row.querySelector('.btn-add-subbranch').addEventListener('click', () => {
+    const k = isArrayItem ? key : (row.querySelector('.pill-input-key')?.value.trim() || 'branch');
+    const branchNode = renderBranchNode(k, { sub_key: 'sub_val' }, container, isArrayItem);
+    row.replaceWith(branchNode);
+    serializeChainTreeToManual();
+  });
+
   // Remove row
   row.querySelector('.btn-remove-row').addEventListener('click', () => {
     row.remove();
-    serializeChainRowsToManual();
+    serializeChainTreeToManual();
   });
 
-  // Input sync
+  // Live input sync
   row.querySelectorAll('input').forEach(input => {
-    input.addEventListener('input', serializeChainRowsToManual);
+    input.addEventListener('input', serializeChainTreeToManual);
   });
 
-  chainBody.appendChild(row);
+  container.appendChild(row);
+  return row;
+}
+
+/* --- Render Nested Branch Node ({ } Object or [ ] Array) --- */
+function renderBranchNode(key, branchData, container, isArrayItem = false) {
+  const isArray = Array.isArray(branchData);
+  const node = document.createElement('div');
+  node.className = 'branch-node';
+  node.dataset.rowType = 'branch';
+  node.dataset.branchType = isArray ? 'array' : 'object';
+  node.dataset.isArrayItem = isArrayItem ? 'true' : 'false';
+
+  const typeLabel = isArray ? '[ ] Array' : '{ } Object';
+
+  node.innerHTML = `
+    <div class="branch-row">
+      <button class="btn-bracket-icon" title="Fold / Unfold Branch">&lt;&gt;</button>
+      ${isArrayItem 
+        ? `<span class="pill-input-key" style="width: auto; padding: 6px 14px; opacity: 0.75;">[${key}]</span>` 
+        : `<input type="text" class="pill-input-key" value="${escapeHtml(key)}" placeholder="BRANCH KEY" />`
+      }
+      <span class="row-colon">:</span>
+      <span class="branch-type-pill">${typeLabel}</span>
+      <span class="branch-fold-summary">&lt;&gt; ... [branch folded]</span>
+      <button class="btn-remove-row" title="Delete entire branch">&times;</button>
+    </div>
+    <div class="branch-inner">
+      <div class="branch-children"></div>
+      <div class="branch-actions">
+        <button class="btn-branch-add btn-add-pair">+ Add Key-Value</button>
+        <button class="btn-branch-add btn-add-branch">&lt;&gt; + Add Branch</button>
+      </div>
+    </div>
+  `;
+
+  // Fold toggle
+  node.querySelector('.branch-row .btn-bracket-icon').addEventListener('click', () => {
+    node.classList.toggle('branch-folded');
+  });
+  node.querySelector('.branch-fold-summary').addEventListener('click', () => {
+    node.classList.remove('branch-folded');
+  });
+
+  // Remove branch
+  node.querySelector('.branch-row .btn-remove-row').addEventListener('click', () => {
+    node.remove();
+    serializeChainTreeToManual();
+  });
+
+  // Key input sync
+  node.querySelector('.branch-row input')?.addEventListener('input', serializeChainTreeToManual);
+
+  const childrenContainer = node.querySelector('.branch-children');
+
+  // Add child key-value
+  node.querySelector('.btn-add-pair').addEventListener('click', () => {
+    renderKvRow('key', 'value', childrenContainer, isArray);
+    serializeChainTreeToManual();
+  });
+
+  // Add child nested branch
+  node.querySelector('.btn-add-branch').addEventListener('click', () => {
+    renderBranchNode('nested_branch', { item: 'val' }, childrenContainer, isArray);
+    serializeChainTreeToManual();
+  });
+
+  // Recursively render child items
+  renderChainTree(branchData, childrenContainer);
+
+  container.appendChild(node);
+  return node;
 }
 
 function toggleMainBranchFold() {
   const chainBody = document.getElementById('chainBody');
   if (!chainBody) return;
-  if (chainBody.style.display === 'none') {
-    chainBody.style.display = 'flex';
-  } else {
-    chainBody.style.display = 'none';
-  }
+  chainBody.style.display = chainBody.style.display === 'none' ? 'flex' : 'none';
 }
 
-function serializeChainRowsToManual() {
+/* ==========================================================================
+   RECURSIVE CHAIN TREE SERIALIZER
+   ========================================================================== */
+function serializeChainTreeToManual() {
   const chainBody = document.getElementById('chainBody');
   const textarea = document.getElementById('manualJsonTextarea');
   if (!chainBody || !textarea) return;
 
-  const rows = chainBody.querySelectorAll('.kv-row');
-  const result = {};
-
-  rows.forEach(r => {
-    const k = r.querySelector('.pill-input-key').value.trim();
-    const vStr = r.querySelector('.pill-input-value').value.trim();
-    if (!k) return;
-
-    try {
-      result[k] = JSON.parse(vStr);
-    } catch (e) {
-      // Coerce primitive or keep string
-      if (vStr === 'true') result[k] = true;
-      else if (vStr === 'false') result[k] = false;
-      else if (vStr === 'null') result[k] = null;
-      else if (!isNaN(Number(vStr)) && vStr !== '') result[k] = Number(vStr);
-      else result[k] = vStr;
-    }
-  });
-
+  const result = serializeContainer(chainBody, false);
   const formatted = JSON.stringify(result, null, 2);
   textarea.value = formatted;
   updateSyntaxBadge();
   window.appState.setPayload(formatted);
 }
 
+function serializeContainer(container, isArray) {
+  const children = Array.from(container.children).filter(el => 
+    el.classList.contains('kv-row') || el.classList.contains('branch-node')
+  );
+
+  if (isArray) {
+    const arr = [];
+    children.forEach(el => {
+      if (el.dataset.rowType === 'primitive') {
+        const valStr = el.querySelector('.pill-input-value')?.value.trim() ?? '';
+        arr.push(parseCoercedValue(valStr));
+      } else if (el.dataset.rowType === 'branch') {
+        const subContainer = el.querySelector('.branch-children');
+        const subIsArray = el.dataset.branchType === 'array';
+        arr.push(serializeContainer(subContainer, subIsArray));
+      }
+    });
+    return arr;
+  } else {
+    const obj = {};
+    children.forEach(el => {
+      const keyInput = el.querySelector('.pill-input-key');
+      const k = keyInput ? (keyInput.value !== undefined ? keyInput.value.trim() : keyInput.textContent.replace(/[\[\]]/g, '').trim()) : '';
+      if (!k) return;
+
+      if (el.dataset.rowType === 'primitive') {
+        const valStr = el.querySelector('.pill-input-value')?.value.trim() ?? '';
+        obj[k] = parseCoercedValue(valStr);
+      } else if (el.dataset.rowType === 'branch') {
+        const subContainer = el.querySelector('.branch-children');
+        const subIsArray = el.dataset.branchType === 'array';
+        obj[k] = serializeContainer(subContainer, subIsArray);
+      }
+    });
+    return obj;
+  }
+}
+
+function parseCoercedValue(vStr) {
+  if (vStr === 'true') return true;
+  if (vStr === 'false') return false;
+  if (vStr === 'null') return null;
+  if (!isNaN(Number(vStr)) && vStr !== '') return Number(vStr);
+  try {
+    return JSON.parse(vStr);
+  } catch (e) {
+    return vStr;
+  }
+}
+
 function escapeHtml(str) {
-  return String(str)
+  return String(str ?? '')
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
@@ -452,9 +593,9 @@ async function handleRun() {
   let resultData = null;
 
   try {
-    // Attempt real live backend call
+    // Live backend call directly to current host or port 3000
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
 
     const response = await fetch(targetUrl, {
       method: 'POST',
@@ -464,14 +605,28 @@ async function handleRun() {
     });
     clearTimeout(timeoutId);
 
-    if (response.ok) {
-      resultData = await response.json();
-    } else {
-      throw new Error(`Server returned HTTP ${response.status}`);
+    const responseText = await response.text();
+    try {
+      resultData = JSON.parse(responseText);
+    } catch (e) {
+      resultData = { message: responseText };
+    }
+
+    if (!response.ok) {
+      const errMsg = resultData?.message 
+        ? (typeof resultData.message === 'object' ? JSON.stringify(resultData.message) : resultData.message)
+        : `Server returned HTTP ${response.status}`;
+      throw new Error(errMsg);
     }
   } catch (err) {
-    console.warn('Backend unavailable, generating realistic fallback telemetry:', err.message);
-    resultData = generateFallbackTelemetry(mode, val.parsed);
+    console.error('Backend execution error:', err);
+    window.showInfoBox({
+      type: 'error',
+      title: 'TEST RUN FAILED',
+      message: `Failed to execute test against backend at <code>${targetUrl}</code>:<br/><span style="color:#FFF;">${escapeHtml(err.message)}</span><br/><br/>Ensure the backend server is running on http://127.0.0.1:3000.`,
+      duration: 6500
+    });
+    return;
   } finally {
     if (runBtn) {
       runBtn.style.opacity = '1';
@@ -479,21 +634,25 @@ async function handleRun() {
     }
   }
 
-  // Save result to storage
+  // Save real backend result to storage
+  if (resultData && typeof resultData === 'object') {
+    resultData.mode = mode;
+  }
   window.appState.saveResult(resultData);
 
-  // E-Commerce Style Floating NOTICE Pop-up Alert
-  const reqCount = resultData.metrics?.latency?.count || 500;
-  const avgMs = resultData.metrics?.latency?.averageMs || 42;
-  const failed = resultData.metrics?.summary?.totalRequestsFailed || 0;
+  // Floating Notification with real backend numbers
+  const reqCount = resultData.metrics?.latency?.count ?? resultData.metrics?.summary?.totalRequestsSent ?? 0;
+  const avgMs = resultData.metrics?.latency?.averageMs ?? resultData.metrics?.latency?.average ?? 0;
+  const failed = resultData.metrics?.summary?.totalRequestsFailed ?? 0;
+  const passed = resultData.metrics?.summary?.successfulRequests ?? resultData.metrics?.summary?.totalRequestsPassed ?? (reqCount - failed);
 
   const statusText = failed === 0 
-    ? `All ${reqCount} requests passed cleanly (${avgMs}ms avg). System rock-solid.`
-    : `${failed} of ${reqCount} requests encountered tail errors. Breaking point analyzed.`;
+    ? `All ${reqCount} requests passed cleanly (${avgMs}ms avg).`
+    : `${passed} succeeded, ${failed} failed.`;
 
   window.showInfoBox({
     type: 'notice',
-    title: 'NOTICE: RESULTS AVAILABLE',
+    title: 'RESULTS AVAILABLE',
     message: `
       <div style="font-size: 14px; font-weight: 800; margin-bottom: 4px;">🎉 Test Run Completed (${mode})</div>
       <div>${statusText}</div>
@@ -508,82 +667,3 @@ async function handleRun() {
   });
 }
 
-/* --- Resilient Realistic Telemetry Generator --- */
-function generateFallbackTelemetry(mode, payload) {
-  const count = mode === 'CONCURRENCY' ? 500 : (mode === 'FUZZY' ? 120 : 4);
-  const avgMs = Math.floor(35 + Math.random() * 25);
-  const p50 = avgMs - 5;
-  const p75 = avgMs + 8;
-  const p90 = avgMs + 22;
-  const p95 = avgMs + 45;
-  const p99 = avgMs * 3.4;
-  const max = p99 + 40;
-
-  const isDegraded = mode === 'CONCURRENCY';
-  const failedCount = isDegraded ? 8 : 0;
-  const passedCount = count - failedCount;
-
-  const cycles = mode === 'CONCURRENCY' ? [
-    { requestcyclenum: 1, batchsize: 50, currentConcurrency: 50, totalrequestssent: 50, successfulrequests: 50, totalrequestfailed: 0 },
-    { requestcyclenum: 2, batchsize: 100, currentConcurrency: 100, totalrequestssent: 100, successfulrequests: 100, totalrequestfailed: 0 },
-    { requestcyclenum: 3, batchsize: 150, currentConcurrency: 150, totalrequestssent: 150, successfulrequests: 148, totalrequestfailed: 2 },
-    { requestcyclenum: 4, batchsize: 200, currentConcurrency: 200, totalrequestssent: 200, successfulrequests: 194, totalrequestfailed: 6 }
-  ] : [];
-
-  const diagnostics = failedCount > 0 ? [
-    { status: 504, data: "Gateway Timeout (upstream service unresponsive)" },
-    { status: 504, data: "Gateway Timeout (upstream service unresponsive)" },
-    { status: 429, data: "Rate Limit Exceeded: maximum 150 req/sec" }
-  ] : [];
-
-  let engineData = {};
-  if (mode === 'SEQUENCE') {
-    engineData = {
-      "0": {
-        request: { method: "POST", endpoint: "/tests/step1", headers: {} },
-        response: { status: 200, data: { userId: "usr_99182", token: "jwt_token_auth" } },
-        conditionresult: [1, { message: "Checkpoint token validated" }, 200]
-      },
-      "1": {
-        request: { method: "POST", endpoint: "/tests/step2", headers: { Authorization: "Bearer jwt_token_auth" } },
-        response: { status: 200, data: { orderId: "ord_5521", status: "confirmed" } },
-        conditionresult: [1, { message: "Order processed successfully" }, 200]
-      }
-    };
-  } else if (mode === 'FUZZY') {
-    engineData = payload.data || {
-      name: { type: "string", values: ["user1", "admin", "null", "<script>"] },
-      age: { type: "int", values: [18, 0, -1, 999999] }
-    };
-  } else {
-    engineData = { diagnostics };
-  }
-
-  return {
-    message: `${mode} test completed execution`,
-    metrics: {
-      latency: {
-        count,
-        average: avgMs,
-        averageMs: avgMs,
-        min: 12,
-        max,
-        p50,
-        p75,
-        p90,
-        p95,
-        p99
-      },
-      summary: {
-        totalRequestsPassed: passedCount,
-        totalRequestsFailed: failedCount
-      },
-      dataprocessed: {
-        sent: count * 380,
-        received: count * 1420
-      },
-      cycles
-    },
-    data: engineData
-  };
-}
