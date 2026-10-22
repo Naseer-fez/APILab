@@ -32,7 +32,7 @@
         <!-- Node 1: CONCURRENCY -->
         <g class="node-pill-group active" data-mode="CONCURRENCY">
           <rect x="110" y="16" width="115" height="42" rx="21" fill="#73412A" stroke="#67752C" stroke-width="3" />
-          <text x="167" y="38">CONCURENCY</text>
+          <text x="167" y="38">CONCURRENCY</text>
         </g>
 
         <!-- Node 2: FUZZY -->
@@ -68,32 +68,46 @@
 
       <!-- Right Side: Available Metrics Sidebar -->
       <aside class="available-metrics-card">
-        <div class="available-metrics-header">Available Metrics</div>
+        <div class="available-metrics-header">
+          <span>AVAILABLE METRICS</span>
+          <button id="btnToggleMetricNotice" class="btn-sidebar-info" type="button" title="Toggle metric explanation">Info</button>
+        </div>
         
-        <div id="availableMetricsScrollable" class="available-metrics-list custom-scrollable">
+        <div id="availableMetricsScrollable" class="available-metrics-list">
           <!-- Metric 1: Executive Verdict & KPIs -->
           <button class="btn-metric-item verdict active" data-metric="verdict" title="Primary health verdict & speed summary">
             <span class="metric-item-title">Executive Verdict</span>
-            <span class="metric-item-subtitle">1-Sec Health &amp; Speed</span>
+            <span class="metric-item-subtitle" id="subVerdict">1-Sec Health &amp; Speed</span>
           </button>
 
           <!-- Metric 2: Latency Percentiles & SLA -->
           <button class="btn-metric-item latency" data-metric="latency" title="Tail latency percentiles Min to Max and SLA overlay">
             <span class="metric-item-title">Latency Percentiles</span>
-            <span class="metric-item-subtitle">p50 - p99 &amp; SLA Overlay</span>
+            <span class="metric-item-subtitle" id="subLatency">p50 - p99 &amp; SLA Overlay</span>
           </button>
 
           <!-- Metric 3: Engine Telemetry (Cycles / Waterfall / Scope) -->
           <button class="btn-metric-item telemetry" data-metric="telemetry" title="Load cycles breakdown, sequence workflow steps, or fuzzing scope">
             <span class="metric-item-title">Engine Telemetry</span>
-            <span class="metric-item-subtitle">Cycles / Workflow Steps</span>
+            <span class="metric-item-subtitle" id="subTelemetry">Cycles / Workflow Steps</span>
           </button>
 
           <!-- Metric 4: Diagnostics & Error Triage -->
           <button class="btn-metric-item diagnostics" data-metric="diagnostics" title="Inspect failed requests, status code pills, and payloads">
             <span class="metric-item-title">Diagnostics &amp; Errors</span>
-            <span class="metric-item-subtitle">Status Code Distribution</span>
+            <span class="metric-item-subtitle" id="subDiagnostics">Status Code Distribution</span>
           </button>
+        </div>
+
+        <!-- Metric Purpose / Help Notice Card -->
+        <div id="metricNoticeCard" class="metric-notice-box">
+          <div class="metric-notice-header">
+            <span id="metricNoticeTitle" class="metric-notice-pill">NOTICE</span>
+            <button id="btnDismissMetricNotice" class="metric-notice-close" title="Dismiss notice" aria-label="Dismiss">&times;</button>
+          </div>
+          <div id="metricNoticeBody" class="metric-notice-body">
+            <!-- Dynamic explanation of why this metric matters -->
+          </div>
         </div>
       </aside>
 

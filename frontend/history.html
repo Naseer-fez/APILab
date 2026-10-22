@@ -39,12 +39,46 @@
       <!-- Left: Historical Runs List Card -->
       <section class="history-logs-card glass-card">
         <div class="history-card-header">
-          <span>Recent Execution Runs</span>
-          <span style="font-family: monospace; font-size: 11px; color: #64748B;">Stored in localStorage</span>
+          <span>Execution Runs</span>
+          <div class="history-source-tabs">
+            <button id="tabBackend" class="history-tab-btn active" type="button">Backend Records</button>
+            <button id="tabLocal" class="history-tab-btn" type="button">Local Runs</button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="history-toolbar">
+          <div class="history-search-box">
+            <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+            </svg>
+            <input type="text" id="historySearchInput" placeholder="Search by name, message, ID..." autocomplete="off">
+            <button id="clearSearchBtn" class="clear-search-btn" type="button" title="Clear search" style="display:none;">&times;</button>
+          </div>
+          <div class="history-filter-group">
+            <select id="statusFilter" class="history-filter-select" title="Filter by status">
+              <option value="all">All Status</option>
+              <option value="success">Success / Pass</option>
+              <option value="failure">Failure / Fail</option>
+            </select>
+            <select id="modeFilter" class="history-filter-select" title="Filter by test mode">
+              <option value="all">All Modes</option>
+              <option value="CONCURRENCY">Concurrency</option>
+              <option value="FUZZY">Fuzzy</option>
+              <option value="SEQUENCE">Sequence</option>
+            </select>
+          </div>
         </div>
 
         <div id="historyList" class="history-scrollable-list custom-scrollable">
           <!-- Dynamically populated by history.js -->
+        </div>
+
+        <!-- Backend Pagination Footer (visible when Backend tab is active) -->
+        <div id="historyPagination" class="history-pagination-bar" style="display: none;">
+          <button id="btnPrevPage" class="pagination-btn" type="button">&larr; Prev</button>
+          <span id="pageIndicator" class="pagination-indicator">Page 1 of 1</span>
+          <button id="btnNextPage" class="pagination-btn" type="button">Next &rarr;</button>
         </div>
       </section>
 

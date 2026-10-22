@@ -35,37 +35,52 @@ window.safeStorage = {
   }
 };
 
-// Default JSON Payload Templates conforming to backend requirements
+// Default JSON Payload Templates using backend test endpoints
 const DEFAULT_PAYLOADS = {
   CONCURRENCY: {
     link: "http://127.0.0.1:3000",
-    endpoint: "/health",
+    endpoint: "/tests/apitest",
     method: "POST",
-    headers: {},
+    headers: {
+      "Content-Type": "application/json"
+    },
+    bodytosend: {
+      name: "Naseer",
+      age: 25,
+      salary: 50000,
+      arr: [1, 2, 3]
+    },
     data: {
-      requests: 500,
-      concurency: 50,
-      increment: 25,
+      requests: 50,
+      concurency: 10,
+      increment: 5,
       interval: 100,
       timout: 5000
     }
   },
   FUZZY: {
-    link: "http://127.0.0.1:3000",
-    endpoint: "/health",
+    link: "http://127.0.0.1:3000/tests/apitest",
     method: "POST",
-    headers: {},
+    requests: 15,
+    headers: {
+      "Content-Type": "application/json"
+    },
     data: {
       name: {
         type: "string",
-        values: ["user1", "admin", "test_42"]
+        values: ["Naseer", "Alice", "Bob"]
       },
       age: {
         type: "int",
-        values: [18, 25, 60]
+        values: [21, 25, 30]
       },
-      active: {
-        type: "boolean"
+      salary: {
+        type: "float",
+        values: [45000, 60000, 80000]
+      },
+      arr: {
+        type: "array",
+        values: [[1, 2], [3, 4]]
       }
     }
   },
@@ -74,18 +89,29 @@ const DEFAULT_PAYLOADS = {
       {
         link: "http://127.0.0.1:3000/tests/step1",
         method: "POST",
-        headers: {},
-        data: { message: "hello" },
-        storeheader: true,
+        fileavailable: false,
+        storeheader: false,
         storedata: true,
         expectedstatus: 200,
+        data: {
+          message: "hello"
+        },
         conditions: {
           if: {
-            condition: "{{response.status}} == 200",
             status: [200],
-            raisecheckpoint: true,
-            data: { userId: "{{response.data.user.id}}" },
-            header: { Authorization: "Bearer {{response.data.token}}" },
+            condition: "{{response.status}} == 200",
+            raiseerror: false,
+            data: {
+              userId: "{{response.data.user.id}}",
+              userName: "{{response.data.user.name}}",
+              token: "{{response.data.token}}"
+            },
+            dataavailable: true,
+            header: {
+              Authorization: "Bearer {{response.data.token}}",
+              "X-User-ID": "{{response.data.user.id}}"
+            },
+            headeravailable: true,
             overwritenextdata: true,
             overwriteheader: true
           }
@@ -94,9 +120,52 @@ const DEFAULT_PAYLOADS = {
       {
         link: "http://127.0.0.1:3000/tests/step2",
         method: "POST",
-        headers: { Authorization: "{{Authorization}}" },
-        data: { userId: "{{userId}}" },
-        expectedstatus: 200
+        fileavailable: false,
+        storeheader: true,
+        storedata: true,
+        expectedstatus: 200,
+        headers: {
+          Authorization: "{{Authorization}}",
+          "X-User-ID": "{{X-User-ID}}"
+        },
+        data: {
+          userId: "{{userId}}",
+          userName: "{{userName}}",
+          token: "{{token}}"
+        },
+        conditions: {
+          if: {
+            status: [200],
+            condition: "{{response.status}} == 200",
+            raiseerror: false,
+            data: {
+              orderId: "{{response.data.orderId}}",
+              total: "{{response.data.total}}"
+            },
+            dataavailable: true,
+            header: {
+              "X-Order-ID": "{{response.data.orderId}}"
+            },
+            headeravailable: true,
+            overwritenextdata: true,
+            overwriteheader: true
+          }
+        }
+      },
+      {
+        link: "http://127.0.0.1:3000/tests/step3",
+        method: "POST",
+        fileavailable: false,
+        storeheader: false,
+        storedata: false,
+        expectedstatus: 200,
+        headers: {
+          "X-Order-ID": "{{X-Order-ID}}"
+        },
+        data: {
+          orderId: "{{orderId}}",
+          total: "{{total}}"
+        }
       }
     ]
   }
@@ -134,6 +203,10 @@ window.appState = {
   },
   saveResult(resultObj) {
     try {
+      const currentMode = this.getMode();
+      if (resultObj && typeof resultObj === 'object') {
+        resultObj.mode = resultObj.mode || currentMode;
+      }
       window.safeStorage.setItem('last_run_result', JSON.stringify(resultObj));
       // Store in History list
       const historyStr = window.safeStorage.getItem('test_runs_history') || '[]';
@@ -141,7 +214,7 @@ window.appState = {
       history.unshift({
         id: 'run_' + Date.now(),
         timestamp: new Date().toISOString(),
-        mode: this.getMode(),
+        mode: currentMode,
         result: resultObj
       });
       // Keep last 20 runs
