@@ -1,11 +1,13 @@
 import express from 'express';
-import { getresultsController } from '../controllers/results.js';
+import { getresultsController,getpagenoController } from '../controllers/results.js';
 
 
 const resultsRoutes = express.Router();
 //simple endpoitn will just write it here itself
 
 resultsRoutes.get('/results/:resultno', getresultsController);
+
+resultsRoutes.get('/results/page/:pageno', getpagenoController);
 
 /*
 This is a simple get enpoint for now

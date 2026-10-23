@@ -25,5 +25,11 @@ const startServer = (port=3000) => {
     });
 
 }
-startServer( 3000);
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Node equivalent of Python's `if __name__ == '__main__':`
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+    startServer(3000);
+}
 export default startServer;

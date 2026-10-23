@@ -39,7 +39,7 @@ const apitestsController = async (req, res) => {
     } else {
         sendingfunction = apitests;
     }
-    let filedata = data[1];
+    let filedata = server.fileavailable ? data[1] : null;
 
     var outputrate = await sendingfunction(
         {
@@ -58,12 +58,17 @@ const apitestsController = async (req, res) => {
     // const log = async (messageinfo, message, level = "INFO", filename = null)
     // log("API Test Controller", {finalresult: finalresult}, "INFO");
     const formatted = resultmetric.formatResponse(finalresult);
-    const msg = "API Test completed successfully"
-    savehistory({ message: msg, metrics: formatted.metrics, data: data[1], success: "PASS" }, "api_test");
+    const msg = "API Test completed successfully";
+    const combinedData = {
+        ...(typeof data[1] === 'object' && data[1] !== null ? data[1] : {}),
+        result: formatted.data?.result || [],
+        diagnostics: formatted.data?.diagnostics || []
+    };
+    savehistory({ message: msg, metrics: formatted.metrics, data: combinedData, success: "PASS" }, "api_test");
     return res.status(200).json({
         message: msg,
         metrics: formatted.metrics,
-        data: data[1]
+        data: combinedData
     });
 }
 
@@ -193,8 +198,11 @@ const apitests = async ({ link, method, data, headers, requests, file }) => {
 
 // Good luck making this in cpp man in future  i just had to copy this full
 function* generatecombinations(data) {
-    const keys = Object.keys(data);
-    // console.log(data)
+    const keys = Object.keys(data).filter(key => data[key] && Array.isArray(data[key].values));
+    if (keys.length === 0) {
+        yield {};
+        return;
+    }
     const maxLength = Math.max(
         ...keys.map(key => data[key].values.length)
     );

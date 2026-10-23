@@ -117,8 +117,12 @@ const summaryreport = async (id = "default", totaldata) => {
 
     let successful = 0;
     let failed = 0;
+    const statusCodes = {};
 
     for (const result of results) {
+        const code = result.status != null ? String(result.status) : 'unknown';
+        statusCodes[code] = (statusCodes[code] || 0) + 1;
+
         if (result.status >= 200 && result.status < 300) {
             successful++;
         } else {
@@ -132,6 +136,7 @@ const summaryreport = async (id = "default", totaldata) => {
         totalRequestsSent: total,
         successfulRequests: successful,
         totalRequestsFailed: failed,
+        statusCodes: statusCodes,
         successRate: total
             ? Number(((successful / total) * 100).toFixed(2))
             : 0,

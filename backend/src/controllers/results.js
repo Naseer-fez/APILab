@@ -3,6 +3,7 @@ import fs from 'node:fs';
 
 
 const TOTALRECORDS = 1000; //maximum records per history file
+const PAGESIZE = 5; //maximum records per page for pagination
 
 const getresultsController = (req, res) => {
     //This is for the get
@@ -38,6 +39,46 @@ const getresultsController = (req, res) => {
 
 
 }
+
+const getpagenoController = (req, res) => {
+    const pageno = getdata(req, "pageno");
+    if (pageno === undefined) {
+        return res.status(400).json({
+            message: "pageno is required"
+        });
+    }
+    const result = readallhistory(null);
+    if (result[2] !== 200) return res.status(result[2]).json({ message: result[1].message });
+    const allhistory = result[1].data;
+    const totalPages = Math.ceil(allhistory.length / PAGESIZE);
+    if (pageno < 1 || pageno > totalPages) {
+        return res.status(400).json({
+            message: `Invalid page number. It should be between 1 and ${totalPages}`
+        });
+    }
+    const startIndex = (pageno - 1) * PAGESIZE;
+    const endIndex = Math.min(startIndex + PAGESIZE, allhistory.length);
+    const pageData = allhistory.slice(startIndex, endIndex);
+    return res.status(200).json({
+        message: `Total pages: ${totalPages}`,
+        data: pageData
+    });
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const getdata = (req, field) => //to finnaly get the data
     req.params?.[field] ?? req.query?.[field] ?? req.body?.[field];
@@ -124,4 +165,4 @@ const readthehistoryfile = (resultno = 1, recordno = 1, field = null) => {
 
 
 
-export { getresultsController };
+export { getresultsController, getpagenoController };

@@ -1,6 +1,2 @@
 
-export {
-    runApiTest,
-    runConcurrencyTest,
-    runSequenceTest
-} from './backend/manager.js';
+export *  from './backend/manager.js';
