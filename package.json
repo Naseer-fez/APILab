@@ -1,0 +1,47 @@
+{
+  "name": "apitestlab",
+  "version": "1.0.1",
+  "description": "Self-hosted API experimentation, testing, and performance platform",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "apitestlab": "bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "backend/src",
+    "!backend/src/.env",
+    "backend/tests",
+    "backend/manager.js",
+    "frontend/*.html",
+    "frontend/css",
+    "frontend/js",
+    "frontend/assets/backgorundjpeg.jpg",
+    "frontend/docs",
+    "index.js"
+  ],
+  "scripts": {
+    "start": "node bin/cli.js",
+    "dev": "nodemon backend/src/server.js"
+  },
+  "keywords": [
+    "api",
+    "testing",
+    "load-testing",
+    "concurrency",
+    "http",
+    "developer-tools"
+  ],
+  "author": "feznaseer",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mime-types": "^3.0.2",
+    "multer": "^2.4.0",
+    "ws": "^8.18.0"
+  }
+}

@@ -1,0 +1,16 @@
+# Environment & Secrets
+.env
+.env.*
+backend/src/.env
+
+# Local Logs & Uploads
+logs/
+*.log
+backend/logs/
+uploads/
+backend/uploads/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/

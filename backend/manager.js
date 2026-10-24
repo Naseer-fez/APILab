@@ -2,7 +2,7 @@
 import { apitestsController } from './src/controllers/apitests.js';
 import { concurrencetestcontroller } from './src/controllers/concurrencetest.js';
 import { sequencetestController } from './src/controllers/sequencetest.js';
-import { getresultsController } from './src/controllers/results.js';
+import { getresultsController,getpagenoController } from './src/controllers/results.js';
 // console.log("Manager file is working");
 
 
@@ -48,7 +48,8 @@ const Routes = {
     "apitests": apitestsController,
     "concurrencetests": concurrencetestcontroller,
     "sequencetests": sequencetestController,
-    "historyresults": getresultsController
+    "historyresults": getresultsController,
+    "recentresults": getpagenoController
 }
 
 
@@ -74,5 +75,12 @@ const runHistoryResults = async (bodyData) => {
     await Routes.historyresults(req, res);
     return parseresdata(res);
 }
+const runRecentResults = async (bodyData) => {
+    const { req, res } = createReqRes(bodyData);
+    await Routes.recentresults(req, res);
+    return parseresdata(res);
+}
 
-export { runApiTest, runConcurrencyTest, runSequenceTest, runHistoryResults };
+
+
+export { runApiTest, runConcurrencyTest, runSequenceTest, runHistoryResults,runRecentResults };

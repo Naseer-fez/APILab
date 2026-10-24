@@ -1,8 +1,7 @@
-
+﻿
 .env
 .env.*
 !.env.example
-
 
 node_modules/
 npm-debug.log*
@@ -11,7 +10,6 @@ yarn-error.log*
 pnpm-debug.log*
 .npm/
 
-
 dist/
 build/
 coverage/
@@ -19,22 +17,18 @@ coverage/
 .nuxt/
 .cache/
 
-
 *.db
 *.sqlite
 *.sqlite3
 *.db-journal
 *.sqlite-journal
 
-
 data/
 db/
 database/
 
-
 *.log
 logs/
-
 
 .DS_Store
 Thumbs.db
@@ -43,3 +37,4 @@ Thumbs.db
 backend/uploads/
 frontend/docs/
 docs/
+.npmrc
