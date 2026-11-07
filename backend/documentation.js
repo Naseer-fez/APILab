@@ -1,5 +1,5 @@
-export const documentation = {
-    "/api/apitests": `This route is used to send a variety of different requests to the server and to verify the result back 
+ const documentation = {
+    "fuzzy": `This route is used to send a variety of different requests to the server and to verify the result back 
 This data is used to test the validation of the API and to see how it will handle different types of data
 For now the data types are {
 "INT" "Float" "STRING" "array" "object" "boolean"
@@ -65,7 +65,7 @@ example of data
     }
 }`,
 
-    "/api/concurrencetest": `The goal of this route is to test the concurrency of the server
+    "concurrence": `The goal of this route is to test the concurrency of the server
 The options the user will send will be 
 {
 "link": "http://localhost:3000/apitest",
@@ -100,7 +100,7 @@ One is the basic data that will be used to send the request to the server (the b
 Second is the config for us to decide how the data is to be sent to the server
 If you don't want the whole file to be allocated in RAM then you can use the option blobmode: true and it will use a blob to send the file to the server`,
 
-    "/api/sequencetest": `This is the most different endpoint of all the endpoints
+    "sequence": `This is the most different endpoint of all the endpoints
 As this endpoint is used to create a simulation test.
 The users will set all the endpoints and the data we get from the server is used to operate the next request in sequence
 This will be used to quickly test a group of APIs together. Example: Create an account and then verify the account, etc.
@@ -234,35 +234,6 @@ The preprocessing of the data is done very strongly and strictly with no fuzzy m
 
 **Rate limit being off is recommended as requests are sent in sequence and rate limiting can be handled on the server side to avoid any issues.** 
 
-Simulation
-│
-├── Requests[]
-│   ├── link / endpoint
-│   ├── method
-│   ├── headers
-│   ├── data
-│   ├── header/data storage
-│   ├── header/data inheritance
-│   ├── files
-│   ├── expected status
-│   ├── error behavior
-│   └── conditions
-│
-├── Runtime references {{...}}
-│
-└── Conditional execution
-    ├── if
-    ├── else if
-    ├── else
-    ├── raise error/checkpoint
-    ├── message/progress
-    ├── header modifications
-    ├── header removal
-    ├── next-request data
-    └── overwrite/merge behavior
-
-
-
 }`,
 
     "/api/results": `This is a simple GET endpoint for now
@@ -275,4 +246,4 @@ Valid query parameters are:
 - data: filter by data content (optional)`
 };
 
-export default documentation;
+export  {documentation};

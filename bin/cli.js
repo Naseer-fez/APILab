@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { runApiTest, runConcurrencyTest, runSequenceTest, runHistoryResults, runRecentResults } from '../backend/manager.js';
+import { documentation } from '../backend/documentation.js';
+import { runApiTest, runConcurrencyTest, runSequenceTest, runHistoryResults, runRecentResults, getdocument } from '../backend/manager.js';
 import startServer from '../backend/src/server.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +13,8 @@ const runtests = {
     concurrency: runConcurrencyTest,
     sequence: runSequenceTest,
     recent: runRecentResults,
-    results: runHistoryResults
+    results: runHistoryResults,
+    document: getdocument
 };
 
 const startui = (port = 3000) => {
@@ -58,12 +60,15 @@ const parsejson = async (input) => {
 
 const main = async () => {
     const command = (args[0] || 'help').toLowerCase();
+    // console.log(command);
     const testRunner = runtests[command];
     if (testRunner) {
         var payload;
-        if ((testRunner !== runHistoryResults && testRunner !== runRecentResults)) {
+         if ((testRunner !== runHistoryResults && testRunner !== runRecentResults) && command !=="document") {
             payload = await parsejson(args[1]);
-        } else {
+        }
+
+        else {
             payload = args[1] || null;
         }
         if (!payload) {
@@ -81,13 +86,14 @@ const main = async () => {
     else if (command === 'help' || command === '--help' || command === '-h') {
         console.log("Usage: node cli.js <command> [payload]");
         console.log("Commands:");
-        console.log("  api <payload>          Run API test with the provided payload");
+        console.log("  fuzzy <payload>          Run API test with the provided payload");
         console.log("  concurrency <payload>  Run Concurrency test with the provided payload");
         console.log("  sequence <payload>     Run Sequence test with the provided payload");
         console.log("  payload should be a JSON string or a path to a JSON file");
         console.log("  results <query>      Fetch historical test results with the provided payload");
         console.log("  recent <query>       Fetch recent test results with the provided payload<last 5 results>");
         console.log("  for query help use 'query'");
+        console.log("  for documenation help use 'document' <endpoint>");
         console.log("  start <port>           Start the server and UI");
         console.log("  help                   Show this help message");
     }
@@ -102,6 +108,15 @@ const main = async () => {
         console.log("Example: node cli.js results success");
         console.log("This will fetch all historical test results that were successful.");
         console.log("reulstno will fetch the result by result number");
+    }
+    else if (command === 'docement') {
+        const availbeendpoint = ["fuzzy", "concurrency", "sequence"]
+        console.log("Documentation Usage: node cli.js document <document>");
+        console.log("Valid Documents are");
+        availbeendpoint.forEach((docs) => { console.log(`-${docs}`) })
+        console.log("Example: node cli.js document fuzzy");
+
+
     }
     else {
         console.error("Invalid command. Use 'help' for usage information.");

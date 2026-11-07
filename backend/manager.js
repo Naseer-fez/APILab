@@ -2,9 +2,10 @@
 import { apitestsController } from './src/controllers/apitests.js';
 import { concurrencetestcontroller } from './src/controllers/concurrencetest.js';
 import { sequencetestController } from './src/controllers/sequencetest.js';
-import { getresultsController,getpagenoController } from './src/controllers/results.js';
+import { getresultsController, getpagenoController } from './src/controllers/results.js';
 // console.log("Manager file is working");
-
+//documentation
+import { documentation } from './documentation.js';
 
 
 const createReqRes = (bodyData, files = null) => {
@@ -49,7 +50,8 @@ const Routes = {
     "concurrencetests": concurrencetestcontroller,
     "sequencetests": sequencetestController,
     "historyresults": getresultsController,
-    "recentresults": getpagenoController
+    "recentresults": getpagenoController,
+    "documentation": documentation
 }
 
 
@@ -80,7 +82,29 @@ const runRecentResults = async (bodyData) => {
     await Routes.recentresults(req, res);
     return parseresdata(res);
 }
+const getdocument = async (endpoint) => {
+    const docs = Routes.documentation;
+    var message = "";
+    var statuscode = 200;
+    var worked = 0;
+    if (typeof endpoint !== "string") {
+        message = `The Endpoint requested is not a string datatype ${endpoint} is invalid`;
+        statuscode = 400;
+    }
+    else if (!Object.hasOwn(docs, endpoint)) {
+        // console.log(endpoint)
+        message = "Api Endpoint is not availabe\nAvailble endpoints are:" + Object.keys(docs).join(", ")
+        statuscode = 404;
+    } else {
+        message = docs[endpoint];
+        worked = 1;
+    }
+    // console.log("messages"+message)
+    return [worked, { data: message }, statuscode]
 
 
 
-export { runApiTest, runConcurrencyTest, runSequenceTest, runHistoryResults,runRecentResults };
+}
+
+
+export { runApiTest, runConcurrencyTest, runSequenceTest, runHistoryResults, runRecentResults,getdocument };
