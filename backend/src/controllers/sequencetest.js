@@ -735,7 +735,7 @@ const changedata = (condition, response, nextrequest = {}) => {
 
 const resultparser = async (result) => {
     result = await resultmetric.combineresults(resultid, result); //We will combine the results and return the final result
-    console.log("The final result is :", result);
+    // console.log("The final result is :", result);
     return [1, result, 200]; //We will return the final result
 }
 
