@@ -10,6 +10,7 @@ const args = process.argv.slice(2);
 
 const runtests = {
     api: runApiTest,
+    fuzzy: runApiTest,
     concurrency: runConcurrencyTest,
     sequence: runSequenceTest,
     recent: runRecentResults,
@@ -17,11 +18,9 @@ const runtests = {
     document: getdocument
 };
 
-const startui = (port = 3000) => {
-
-    startServer(port);
-
-}
+const startui = (port = 3000, host = '127.0.0.1', runhost = false) => {
+    startServer(port, host, runhost);
+};
 
 const parsejson = async (input) => {
     if (!input) {
@@ -72,19 +71,28 @@ const main = async () => {
             payload = args[1] || null;
         }
         if (!payload) {
-            console.error("No payload provided. Please provide a JSON payload.");
+            if (command === 'document') {
+                console.error("No endpoint provided. Use 'document <endpoint>' (e.g. fuzzy, concurrency, sequence).");
+            } else {
+                console.error("No payload provided. Please provide a JSON payload.");
+            }
             process.exit(1);
         }
         const result = await testRunner(payload);
         // console.log("Test Result:", result);
         return resultsparser(result);
     }
-    else if (command === 'start' || command === 'run') {
+    else if (command === 'start' || command === 'run' ) {
         const port = args[1] ? parseInt(args[1]) : 3000;
-        startui(port);
+        startui(port, '127.0.0.1', false);
+    }else if (command === 'network') {
+        const port = args[1] ? parseInt(args[1]) : 3000;
+        startui(port, '0.0.0.0', true); 
     }
     else if (command === 'help' || command === '--help' || command === '-h') {
-        console.log("Usage: node cli.js <command> [payload]");
+        const binName = path.basename(process.argv[1] || 'apitestlab');
+        const cmdPrefix = binName.endsWith('.js') ? `node ${binName}` : binName;
+        console.log(`Usage: ${cmdPrefix} <command> [payload]`);
         console.log("Commands:");
         console.log("  fuzzy <payload>          Run API test with the provided payload");
         console.log("  concurrency <payload>  Run Concurrency test with the provided payload");
@@ -94,7 +102,8 @@ const main = async () => {
         console.log("  recent <query>       Fetch recent test results with the provided payload<last 5 results>");
         console.log("  for query help use 'query'");
         console.log("  for documenation help use 'document' <endpoint>");
-        console.log("  start <port>           Start the server and UI");
+        console.log("  start <port>           Start the server and UI on Localhost.");
+        console.log("  network <port>         Start the server and UI on your network for other users along with localhost.");
         console.log("  help                   Show this help message");
     }
     else if (command === 'query') {

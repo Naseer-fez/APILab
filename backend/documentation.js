@@ -65,7 +65,7 @@ example of data
     }
 }`,
 
-    "concurrence": `The goal of this route is to test the concurrency of the server
+    "concurrency": `The goal of this route is to test the concurrency of the server
 The options the user will send will be 
 {
 "link": "http://localhost:3000/apitest",
@@ -236,7 +236,7 @@ The preprocessing of the data is done very strongly and strictly with no fuzzy m
 
 }`,
 
-    "/api/results": `This is a simple GET endpoint for now
+    "results": `This is a simple GET endpoint for now
 The user can query the results by providing the result number in the URL path
 Valid query parameters are:
 - resultno: the result number to fetch (required)
@@ -245,5 +245,7 @@ Valid query parameters are:
 - metrics: filter by metrics content (optional)
 - data: filter by data content (optional)`
 };
+
+
 
 export  {documentation};
