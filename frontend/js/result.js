@@ -103,29 +103,29 @@ async function resolveResultData(currentMode) {
 
   // 3. Attempt to fetch latest matching record from backend history (/api/results/0)
   try {
-    const res = await fetch('/api/results/0');
-    if (res.ok) {
-      const allHistory = await res.json();
-      if (Array.isArray(allHistory) && allHistory.length > 0) {
-        const matchedItem = [...allHistory].reverse().find(item => {
-          const rawName = String(item.testname || '').toLowerCase();
-          if (targetMode === 'CONCURRENCY') return rawName.includes('concurrency') && item.metrics;
-          if (targetMode === 'SEQUENCE') return rawName.includes('sequence') && item.metrics;
-          if (targetMode === 'FUZZY') return (rawName.includes('api') || rawName.includes('fuzzy')) && item.metrics;
-          return detectEngine(item.metrics, item.data, targetMode) === targetMode;
-        });
+    const allHistory = window.dataCache
+      ? await window.dataCache.fetchWithCache('/api/results/0')
+      : await (await fetch('/api/results/0')).json();
 
-        if (matchedItem) {
-          const normalized = {
-            status: (matchedItem.success === true || matchedItem.success === 'PASS') ? 200 : 500,
-            message: matchedItem.message,
-            metrics: matchedItem.metrics,
-            data: matchedItem.data,
-            mode: targetMode
-          };
-          window.appState?.saveResult(normalized);
-          return normalized;
-        }
+    if (Array.isArray(allHistory) && allHistory.length > 0) {
+      const matchedItem = [...allHistory].reverse().find(item => {
+        const rawName = String(item.testname || '').toLowerCase();
+        if (targetMode === 'CONCURRENCY') return rawName.includes('concurrency') && item.metrics;
+        if (targetMode === 'SEQUENCE') return rawName.includes('sequence') && item.metrics;
+        if (targetMode === 'FUZZY') return (rawName.includes('api') || rawName.includes('fuzzy')) && item.metrics;
+        return detectEngine(item.metrics, item.data, targetMode) === targetMode;
+      });
+
+      if (matchedItem) {
+        const normalized = {
+          status: (matchedItem.success === true || matchedItem.success === 'PASS') ? 200 : 500,
+          message: matchedItem.message,
+          metrics: matchedItem.metrics,
+          data: matchedItem.data,
+          mode: targetMode
+        };
+        window.appState?.saveResult(normalized);
+        return normalized;
       }
     }
   } catch (e) {
@@ -134,29 +134,29 @@ async function resolveResultData(currentMode) {
 
   // 4. Fallback to /api/results/page/1
   try {
-    const res = await fetch('/api/results/page/1');
-    if (res.ok) {
-      const json = await res.json();
-      if (Array.isArray(json.data) && json.data.length > 0) {
-        const matchedItem = [...json.data].reverse().find(item => {
-          const rawName = String(item.testname || '').toLowerCase();
-          if (targetMode === 'CONCURRENCY') return rawName.includes('concurrency') && item.metrics;
-          if (targetMode === 'SEQUENCE') return rawName.includes('sequence') && item.metrics;
-          if (targetMode === 'FUZZY') return (rawName.includes('api') || rawName.includes('fuzzy')) && item.metrics;
-          return false;
-        });
+    const json = window.dataCache
+      ? await window.dataCache.fetchWithCache('/api/results/page/1')
+      : await (await fetch('/api/results/page/1')).json();
 
-        if (matchedItem) {
-          const normalized = {
-            status: (matchedItem.success === true || matchedItem.success === 'PASS') ? 200 : 500,
-            message: matchedItem.message,
-            metrics: matchedItem.metrics,
-            data: matchedItem.data,
-            mode: targetMode
-          };
-          window.appState?.saveResult(normalized);
-          return normalized;
-        }
+    if (Array.isArray(json.data) && json.data.length > 0) {
+      const matchedItem = [...json.data].reverse().find(item => {
+        const rawName = String(item.testname || '').toLowerCase();
+        if (targetMode === 'CONCURRENCY') return rawName.includes('concurrency') && item.metrics;
+        if (targetMode === 'SEQUENCE') return rawName.includes('sequence') && item.metrics;
+        if (targetMode === 'FUZZY') return (rawName.includes('api') || rawName.includes('fuzzy')) && item.metrics;
+        return false;
+      });
+
+      if (matchedItem) {
+        const normalized = {
+          status: (matchedItem.success === true || matchedItem.success === 'PASS') ? 200 : 500,
+          message: matchedItem.message,
+          metrics: matchedItem.metrics,
+          data: matchedItem.data,
+          mode: targetMode
+        };
+        window.appState?.saveResult(normalized);
+        return normalized;
       }
     }
   } catch (e) {}
@@ -436,8 +436,10 @@ function initNodeChain(activeMode) {
   nodes.forEach(n => {
     if (n.dataset.mode === activeMode) {
       n.classList.add('active');
+      n.classList.remove('inactive');
     } else {
       n.classList.remove('active');
+      n.classList.add('inactive');
     }
 
     n.addEventListener('click', async () => {
@@ -481,7 +483,7 @@ function initResultsVisualizer(resultData, engine) {
       const isHidden = noticeCard.classList.contains('hidden');
       if (isHidden) {
         noticeCard.classList.remove('hidden');
-        window.safeStorage?.setItem('metric_notice_dismissed', 'false');
+        window.safeStorage?.setItem('metric_notice_dismissed', 'manually_opened');
         btnToggleInfo.classList.add('active');
         updateNotice();
       } else {
@@ -491,6 +493,14 @@ function initResultsVisualizer(resultData, engine) {
       }
     });
   }
+
+  // Auto-dismiss initial notice box 2 seconds after initialization
+  setTimeout(() => {
+    if (noticeCard && !noticeCard.classList.contains('hidden') && window.safeStorage?.getItem('metric_notice_dismissed') !== 'manually_opened') {
+      noticeCard.classList.add('hidden');
+      if (btnToggleInfo) btnToggleInfo.classList.remove('active');
+    }
+  }, 2000);
 
   const metricButtons = document.querySelectorAll('.btn-metric-item');
   metricButtons.forEach(btn => {

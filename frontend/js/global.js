@@ -35,6 +35,100 @@ window.safeStorage = {
   }
 };
 
+// Theme Manager (Pure Vanilla ES6 - Light & Dark Mode System)
+window.themeManager = {
+  storageKey: 'app_theme',
+
+  getTheme() {
+    try {
+      const stored = (window.safeStorage && window.safeStorage.getItem(this.storageKey)) ||
+                     localStorage.getItem(this.storageKey);
+      if (stored === 'dark' || stored === 'light') {
+        return stored;
+      }
+    } catch (e) {}
+    return 'light'; // Default mode preserved as light
+  },
+
+  setTheme(theme) {
+    const activeTheme = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', activeTheme);
+    if (document.body) {
+      document.body.setAttribute('data-theme', activeTheme);
+    }
+    try {
+      if (window.safeStorage) {
+        window.safeStorage.setItem(this.storageKey, activeTheme);
+      } else {
+        localStorage.setItem(this.storageKey, activeTheme);
+      }
+    } catch (e) {}
+
+    this.updateToggleUI(activeTheme);
+    window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: activeTheme } }));
+    return activeTheme;
+  },
+
+  toggle() {
+    const current = this.getTheme();
+    const next = current === 'dark' ? 'light' : 'dark';
+    return this.setTheme(next);
+  },
+
+  updateToggleUI(theme) {
+    const isDark = theme === 'dark';
+    const buttons = document.querySelectorAll('.theme-toggle-btn, #themeToggleBtn');
+    buttons.forEach(btn => {
+      btn.setAttribute('data-theme', theme);
+      btn.setAttribute('aria-label', `Current mode: ${theme}. Click to switch to ${isDark ? 'light' : 'dark'} mode`);
+      btn.setAttribute('title', `Switch to ${isDark ? 'light' : 'dark'} mode`);
+
+      const textEl = btn.querySelector('.theme-toggle-text');
+      if (textEl) {
+        textEl.textContent = isDark ? 'DARK' : 'LIGHT';
+      }
+
+      if (isDark) {
+        btn.classList.add('is-dark');
+        btn.classList.remove('is-light');
+      } else {
+        btn.classList.add('is-light');
+        btn.classList.remove('is-dark');
+      }
+    });
+  },
+
+  init() {
+    const theme = this.getTheme();
+    this.setTheme(theme);
+
+    // Global click listener for any theme toggle button
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.theme-toggle-btn, #themeToggleBtn');
+      if (btn) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.toggle();
+      }
+    });
+
+    // Cross-tab synchronization
+    window.addEventListener('storage', (e) => {
+      if (e.key === this.storageKey && (e.newValue === 'dark' || e.newValue === 'light')) {
+        this.setTheme(e.newValue);
+      }
+    });
+  }
+};
+
+// Immediate early activation so DOM attribute is set synchronously
+(function() {
+  try {
+    const initialTheme = window.themeManager.getTheme();
+    document.documentElement.setAttribute('data-theme', initialTheme);
+  } catch (e) {}
+})();
+
 // Default JSON Payload Templates using backend test endpoints
 const DEFAULT_PAYLOADS = {
   CONCURRENCY: {
@@ -273,9 +367,11 @@ window.showInfoBox = function(options = {}) {
     type = 'notice', // 'notice' | 'error' | 'success'
     title = '',
     message = '',
-    duration = 5000,
     onAction = null
   } = options;
+
+  // For notices, stay on screen for 2 seconds (2000ms) as requested
+  const duration = type === 'notice' ? 2000 : (options.duration !== undefined ? options.duration : 5000);
 
   let container = document.getElementById('infoBoxContainer');
   if (!container) {
@@ -339,7 +435,84 @@ window.showInfoBox = function(options = {}) {
   return wrapper;
 };
 
+// ==========================================================================
+// CLIENT-SIDE DATA CACHING & INSTANT PREFETCH CONTROLLER
+// Eliminates perceived data fetching lag across pages by fetching ahead of time
+// ==========================================================================
+window.dataCache = {
+  _cache: new Map(),
+
+  async get(url) {
+    if (this._cache.has(url)) {
+      return this._cache.get(url);
+    }
+    try {
+      const stored = sessionStorage.getItem('cache_' + url);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        this._cache.set(url, parsed);
+        return parsed;
+      }
+    } catch (e) {}
+    return null;
+  },
+
+  set(url, data) {
+    this._cache.set(url, data);
+    try {
+      sessionStorage.setItem('cache_' + url, JSON.stringify(data));
+    } catch (e) {}
+  },
+
+  clearResults() {
+    this._cache.forEach((_, key) => {
+      if (key.includes('/api/results')) {
+        this._cache.delete(key);
+        try { sessionStorage.removeItem('cache_' + key); } catch (e) {}
+      }
+    });
+  },
+
+  async fetchWithCache(url, options = {}) {
+    const cached = await this.get(url);
+    if (cached && !options.force) {
+      return cached;
+    }
+    try {
+      const res = await fetch(url, options);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      this.set(url, data);
+      return data;
+    } catch (err) {
+      if (cached) return cached;
+      throw err;
+    }
+  },
+
+  prefetch(urls) {
+    const list = Array.isArray(urls) ? urls : [urls];
+    list.forEach(url => {
+      if (!this._cache.has(url)) {
+        this.fetchWithCache(url).catch(() => {});
+      }
+    });
+  }
+};
+
 // DOM Content Loaded Handler
 document.addEventListener('DOMContentLoaded', () => {
+  window.themeManager.init();
   window.updateResultBadge();
+
+  // Eagerly prefetch frequently accessed endpoints so navigation is instantaneous
+  setTimeout(() => {
+    window.dataCache.prefetch([
+      '/api/results/page/1',
+      '/api/results/0',
+      '/docs/concurrency',
+      '/docs/fuzzy',
+      '/docs/sequence'
+    ]);
+  }, 80);
 });

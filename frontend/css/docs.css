@@ -1,0 +1,367 @@
+/* ==========================================================================
+   API DOCUMENTATION PAGE STYLES (Clean, Unified & Consistent)
+   Matches the design system of JSON Editor, Run History, and Results
+   ========================================================================== */
+
+/* Top Navigation Bar */
+.docs-top-bar {
+  width: 100%;
+  max-width: 1140px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px 0 24px;
+  position: relative;
+  z-index: 20;
+}
+
+/* Header Single Clean Go Back Button */
+.btn-top-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--header-badge-bg);
+  backdrop-filter: blur(16px);
+  border: 3px solid var(--header-badge-border);
+  border-radius: 9999px;
+  padding: 8px 24px;
+  font-family: var(--font-sans);
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  color: var(--header-badge-text);
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+  outline: none;
+}
+
+.btn-top-back:hover {
+  transform: scale(1.06) translateY(-2px);
+  filter: brightness(1.15);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 12px rgba(26, 127, 122, 0.4);
+}
+
+.btn-top-back:active {
+  transform: scale(0.96) translateY(1px);
+}
+
+.btn-top-back svg {
+  transition: transform 0.2s ease;
+}
+
+.btn-top-back:hover svg {
+  transform: translateX(-3px);
+}
+
+.top-bar-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Main Layout Grid */
+.docs-layout {
+  width: 100%;
+  max-width: 1180px;
+  height: calc(100vh - 100px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 24px;
+}
+
+/* Documentation Glass Card */
+.docs-main-card {
+  width: 100%;
+  max-width: 1100px;
+  height: 520px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 32px;
+}
+
+/* Card Header (Matches JSON Editor Header) */
+.docs-card-header {
+  height: 60px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1.5px solid var(--sub-panel-border);
+  gap: 16px;
+  transition: border-color 0.25s ease;
+}
+
+.docs-header-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  overflow-x: auto;
+}
+
+.docs-card-title {
+  font-family: var(--font-sans);
+  font-weight: 900;
+  font-size: 14.5px;
+  letter-spacing: 1.8px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  transition: color 0.25s ease;
+}
+
+/* Mode Switcher Tabs */
+.docs-mode-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--sub-panel-bg);
+  padding: 4px;
+  border-radius: 9999px;
+  border: 1px solid var(--sub-panel-border);
+  transition: all 0.25s ease;
+}
+
+.docs-tab-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 11.5px;
+  letter-spacing: 0.8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.22s ease;
+  white-space: nowrap;
+}
+
+.docs-tab-btn:hover:not(.active) {
+  color: var(--text-primary);
+  background: var(--item-card-bg);
+  transform: translateY(-1px);
+}
+
+.docs-tab-btn.active {
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transform: scale(1.03);
+}
+
+.docs-tab-btn.active[data-mode="CONCURRENCY"] {
+  background: #731C61;
+  box-shadow: 0 4px 12px rgba(115, 28, 97, 0.6);
+}
+
+.docs-tab-btn.active[data-mode="FUZZY"] {
+  background: #376D33;
+  box-shadow: 0 4px 12px rgba(55, 109, 51, 0.6);
+}
+
+.docs-tab-btn.active[data-mode="SEQUENCE"] {
+  background: #0A6563;
+  box-shadow: 0 4px 12px rgba(10, 101, 99, 0.6);
+}
+
+.docs-tab-btn.active[data-mode="RESULTS"] {
+  background: #2A6B73;
+  box-shadow: 0 4px 12px rgba(42, 107, 115, 0.6);
+}
+
+/* Copy Action Button (Exact Match to JSON Editor Copy Button) */
+.btn-copy {
+  background-color: var(--btn-copy-bg, #635927);
+  border-color: var(--btn-copy-border, #753B2C);
+  padding: 6px 28px;
+  font-size: 13px;
+  border-width: 3.5px;
+}
+
+/* Card Body */
+.docs-card-body {
+  flex: 1;
+  background: var(--dark-glass-bg);
+  border-radius: 0 0 32px 32px;
+  padding: 20px 28px;
+  overflow-y: auto;
+  user-select: text !important;
+}
+
+/* Simple Structured Layout */
+.docs-simple-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.docs-meta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 0 2px;
+}
+
+.docs-endpoint-badge {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  background: rgba(120, 194, 233, 0.15);
+  color: #78C2E9;
+  border: 1.5px solid rgba(120, 194, 233, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.docs-endpoint-badge.concurrency {
+  border-color: #731C61;
+  background: rgba(115, 28, 97, 0.25);
+  color: #EFA6E1;
+}
+
+.docs-endpoint-badge.fuzzy {
+  border-color: #376D33;
+  background: rgba(55, 109, 51, 0.25);
+  color: #A3EDA0;
+}
+
+.docs-endpoint-badge.sequence {
+  border-color: #0A6563;
+  background: rgba(10, 101, 99, 0.25);
+  color: #78E0DC;
+}
+
+.docs-endpoint-badge.results {
+  border-color: #2A6B73;
+  background: rgba(42, 107, 115, 0.25);
+  color: #92DCED;
+}
+
+.docs-format-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+}
+
+/* Monospace Preformatted Box (100% Consistent with Code Editor) */
+.docs-pre-code {
+  flex: 1;
+  background: rgba(8, 11, 15, 0.88);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 18px 22px;
+  color: #78C2E9;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  overflow-y: auto;
+  box-shadow: inset 0 3px 12px rgba(0, 0, 0, 0.55);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(10, 101, 99, 0.65) transparent;
+}
+
+.docs-pre-code::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.docs-pre-code::-webkit-scrollbar-thumb {
+  background: rgba(10, 101, 99, 0.65);
+  border-radius: 9999px;
+}
+
+/* Loading State */
+.docs-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 250px;
+  gap: 14px;
+  color: #78C2E9;
+  font-family: var(--font-sans);
+  font-weight: 700;
+}
+
+.docs-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(120, 194, 233, 0.25);
+  border-top-color: #78C2E9;
+  border-radius: 50%;
+  animation: docsSpin 0.8s linear infinite;
+}
+
+@keyframes docsSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error State */
+.docs-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 250px;
+  text-align: center;
+  gap: 10px;
+  color: #FFFFFF;
+  font-family: var(--font-sans);
+}
+
+.docs-error-title {
+  color: #E50914;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 1px;
+}
+
+.docs-error-state code {
+  background: rgba(229, 9, 20, 0.15);
+  color: #EDA7A7;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+}
+
+.btn-retry {
+  margin-top: 12px;
+  background: #0A6563;
+  border-color: #5E0C22;
+  color: #FFFFFF;
+  padding: 6px 24px;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .docs-top-bar {
+    padding: 10px 14px 0 14px;
+  }
+  .docs-layout {
+    height: calc(100vh - 140px);
+    padding: 6px 14px;
+  }
+  .docs-card-header {
+    flex-direction: column;
+    height: auto;
+    padding: 12px;
+    gap: 10px;
+  }
+}

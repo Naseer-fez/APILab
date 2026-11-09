@@ -12,7 +12,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnAutoFix = document.getElementById('btnAutoFix');
   const modePills = document.querySelectorAll('.btn-mode-pill');
 
+  // Split Documentation Elements
+  const editorLayout = document.getElementById('editorLayout');
+  const btnDocsToggle = document.getElementById('btnDocsToggle');
+  const editorDocsCard = document.getElementById('editorDocsCard');
+  const btnMaximizeDocs = document.getElementById('btnMaximizeDocs');
+  const btnCloseDocs = document.getElementById('btnCloseDocs');
+  const splitDocsModeBadge = document.getElementById('splitDocsModeBadge');
+  const splitDocsBody = document.getElementById('splitDocsBody');
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramMode = urlParams.get('mode');
+  if (paramMode) {
+    window.appState.setMode(paramMode.toUpperCase());
+  }
+
   let currentMode = window.appState.getMode();
+  let isSplitDocsOpen = false;
 
   // Load payload from storage
   textarea.value = window.appState.getPayload(currentMode);
@@ -46,6 +62,78 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Interactive Corner Drag-to-Resize for Code Editor Card
+  const resizeHandle = document.getElementById('editorResizeHandle');
+  const codeEditorCard = document.getElementById('codeEditorCard');
+  if (resizeHandle && codeEditorCard) {
+    let isResizing = false;
+    let startX = 0, startY = 0, startW = 0, startH = 0;
+
+    resizeHandle.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startW = codeEditorCard.offsetWidth;
+      startH = codeEditorCard.offsetHeight;
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'nwse-resize';
+      e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+      const newW = Math.max(340, Math.min(window.innerWidth - 180, startW + (e.clientX - startX)));
+      const newH = Math.max(260, Math.min(window.innerHeight - 90, startH + (e.clientY - startY)));
+      codeEditorCard.style.width = `${newW}px`;
+      codeEditorCard.style.maxWidth = 'none';
+      codeEditorCard.style.height = `${newH}px`;
+      codeEditorCard.style.flex = 'none';
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+      }
+    });
+  }
+
+  // Interactive Corner Drag-to-Resize for Docs Card
+  const docsResizeHandle = document.getElementById('docsResizeHandle');
+  if (docsResizeHandle && editorDocsCard) {
+    let isDocsResizing = false;
+    let startDocsX = 0, startDocsY = 0, startDocsW = 0, startDocsH = 0;
+
+    docsResizeHandle.addEventListener('mousedown', (e) => {
+      isDocsResizing = true;
+      startDocsX = e.clientX;
+      startDocsY = e.clientY;
+      startDocsW = editorDocsCard.offsetWidth;
+      startDocsH = editorDocsCard.offsetHeight;
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'nwse-resize';
+      e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDocsResizing) return;
+      const newW = Math.max(260, Math.min(window.innerWidth - 180, startDocsW + (e.clientX - startDocsX)));
+      const newH = Math.max(260, Math.min(window.innerHeight - 90, startDocsH + (e.clientY - startDocsY)));
+      editorDocsCard.style.width = `${newW}px`;
+      editorDocsCard.style.height = `${newH}px`;
+      editorDocsCard.style.flex = 'none';
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDocsResizing) {
+        isDocsResizing = false;
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+      }
+    });
+  }
+
   // Mode switcher pills
   modePills.forEach(pill => {
     pill.addEventListener('click', () => {
@@ -59,11 +147,16 @@ document.addEventListener('DOMContentLoaded', () => {
       updateLineNumbers();
       updateSyntaxStatus();
 
+      // If split documentation is open, automatically keep docs in sync
+      if (isSplitDocsOpen) {
+        loadSplitDocs(mode);
+      }
+
       window.showInfoBox({
         type: 'notice',
         title: 'MODE SWITCH',
         message: `Active engine set to <b>${mode}</b>. Switched to designated payload.`,
-        duration: 3000
+        duration: 2000
       });
     });
   });
@@ -79,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
         duration: 3000
       });
     } catch (err) {
-      // Fallback
       textarea.select();
       document.execCommand('copy');
       window.showInfoBox({
@@ -95,6 +187,86 @@ document.addEventListener('DOMContentLoaded', () => {
   btnAutoFix?.addEventListener('click', () => {
     handleAutoFix();
   });
+
+  /* ==========================================================================
+     SPLIT SCREEN DOCUMENTATION CONTROLLER
+     ========================================================================== */
+  btnDocsToggle?.addEventListener('click', () => {
+    toggleSplitDocs();
+  });
+
+  btnCloseDocs?.addEventListener('click', () => {
+    toggleSplitDocs(false);
+  });
+
+  btnMaximizeDocs?.addEventListener('click', () => {
+    // Open full documentation page, passing active mode and from=editor
+    window.location.href = `docs.html?mode=${currentMode}&from=editor`;
+  });
+
+  function toggleSplitDocs(forceState) {
+    isSplitDocsOpen = typeof forceState === 'boolean' ? forceState : !isSplitDocsOpen;
+
+    if (isSplitDocsOpen) {
+      editorLayout.classList.add('docs-split-active');
+      editorDocsCard.style.display = 'flex';
+      btnDocsToggle?.classList.add('active');
+      window.safeStorage?.setItem('split_docs_open', 'true');
+      loadSplitDocs(currentMode);
+    } else {
+      editorLayout.classList.remove('docs-split-active');
+      editorDocsCard.style.display = 'none';
+      btnDocsToggle?.classList.remove('active');
+      window.safeStorage?.setItem('split_docs_open', 'false');
+    }
+  }
+
+  async function loadSplitDocs(mode) {
+    if (!splitDocsBody) return;
+
+    if (splitDocsModeBadge) {
+      splitDocsModeBadge.textContent = mode;
+      splitDocsModeBadge.className = `split-docs-mode-badge ${mode.toLowerCase()}`;
+    }
+
+    splitDocsBody.innerHTML = `
+      <div class="docs-split-loading">
+        <div class="docs-mini-spinner"></div>
+        <span>Loading ${mode} specification...</span>
+      </div>
+    `;
+
+    const endpointKey = mode === 'CONCURRENCY' ? 'concurrency' : mode.toLowerCase();
+
+    try {
+      const url = `/docs/${endpointKey}`;
+      const json = window.dataCache
+        ? await window.dataCache.fetchWithCache(url)
+        : await (await fetch(url)).json();
+      const text = json.data || json.message || '';
+      renderSplitDocs(text);
+    } catch (e) {
+      splitDocsBody.innerHTML = `
+        <div class="docs-split-error">
+          <p style="color: #E50914; font-weight: 800; margin-bottom: 6px;">▲ FAILED TO LOAD</p>
+          <p>Could not fetch from <code>/docs/${endpointKey}</code>.</p>
+          <p style="color: #88929B; font-size: 11px; margin-top: 6px;">Ensure the backend server is running.</p>
+        </div>
+      `;
+    }
+  }
+
+  function renderSplitDocs(rawText) {
+    const escape = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    splitDocsBody.innerHTML = `
+      <pre class="docs-split-pre"><code>${escape(rawText)}</code></pre>
+    `;
+  }
+
+  // Restore split-screen layout if requested via URL or saved preference
+  if (urlParams.get('splitDocs') === 'true' || window.safeStorage?.getItem('split_docs_open') === 'true') {
+    toggleSplitDocs(true);
+  }
 
   /* ==========================================================================
      LINE NUMBER GENERATOR
@@ -140,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
         type: 'notice',
         title: 'NOTICE',
         message: 'Editor is empty. Enter or paste JSON to repair.',
-        duration: 3000
+        duration: 2000
       });
       return;
     }
@@ -190,7 +362,6 @@ document.addEventListener('DOMContentLoaded', () => {
         duration: 4000
       });
     } catch (err) {
-      // Unrepairable syntax flaw
       window.showInfoBox({
         type: 'error',
         title: 'AUTO FIX FAILED',

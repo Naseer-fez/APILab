@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>JSON Editor - API Integration Platform</title>
   
+  <script>
+    try {
+      var theme = localStorage.getItem('app_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) {}
+  </script>
+
   <link rel="stylesheet" href="css/global.css">
   <link rel="stylesheet" href="css/jsoneditor.css">
 </head>
@@ -30,16 +37,76 @@
         </div>
       </div>
 
-      <div style="width: 48px;"></div> <!-- Spacer for optical balance -->
+      <!-- Right: Theme Mode Toggle Button -->
+      <div class="header-theme-toggle-wrap">
+        <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Toggle Light and Dark Mode" title="Toggle Theme (Light / Dark)">
+          <span class="theme-toggle-pill">
+            <span class="theme-icon-slot theme-sun" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+            </span>
+            <span class="theme-icon-slot theme-moon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </span>
+            <span class="theme-toggle-thumb"></span>
+          </span>
+          <span class="theme-toggle-text">LIGHT</span>
+        </button>
+      </div>
     </header>
 
     <!-- ==========================================================================
-         MAIN WORKSPACE: CODE EDITOR & RIGHT ACTIONS
+         MAIN WORKSPACE: SPLIT DOCUMENTATION & CODE EDITOR & RIGHT ACTIONS
          ========================================================================== -->
-    <main class="editor-layout">
+    <main id="editorLayout" class="editor-layout">
       
+      <!-- Left (When Split): Documentation Reference Glass Card -->
+      <section id="editorDocsCard" class="editor-docs-card glass-card" style="display: none;">
+        <!-- Header -->
+        <div class="docs-split-header">
+          <div class="docs-split-header-left">
+            <span class="docs-split-badge-title">DOCS</span>
+            <span id="splitDocsModeBadge" class="split-docs-mode-badge concurrency">CONCURENCY</span>
+          </div>
+          <div class="docs-split-header-right">
+            <button id="btnMaximizeDocs" class="action-pill-btn btn-maximize-pill" title="Maximize to full documentation page">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+              </svg>
+              <span>MAXIMIZE</span>
+            </button>
+            <button id="btnCloseDocs" class="btn-docs-close-icon" title="Close Split View">&times;</button>
+          </div>
+        </div>
+
+        <!-- Body: Live Documentation Content -->
+        <div id="splitDocsBody" class="docs-split-body custom-scrollable">
+          <div class="docs-split-loading">
+            <div class="docs-mini-spinner"></div>
+            <span>Loading documentation...</span>
+          </div>
+        </div>
+        <!-- Corner Resize Handle Indicator for Docs -->
+        <div class="editor-resize-handle docs-resize-handle" id="docsResizeHandle" title="Click &amp; drag to resize Documentation container">
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="none">
+            <path d="M14 2L2 14M14 7L7 14M14 12L12 14" stroke="#78C2E9" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </section>
+
       <!-- Center: Code Editor Glass Card -->
-      <section class="code-editor-card glass-card">
+      <section class="code-editor-card glass-card" id="codeEditorCard">
         <!-- Header -->
         <div class="code-card-header">
           <div class="editor-status-bar">
@@ -52,16 +119,29 @@
         <div class="code-editor-body">
           <div id="lineNumbersCol" class="line-numbers-col">1</div>
           <textarea id="jsonCodeInput" class="code-textarea" spellcheck="false" placeholder='e.g. { "link": "http://127.0.0.1:3000/tests/apitest", "method": "POST", "data": { ... } }'></textarea>
+          <!-- Corner Resize Handle Indicator -->
+          <div class="editor-resize-handle" id="editorResizeHandle" title="Click &amp; drag to resize JSON editor">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none">
+              <path d="M14 2L2 14M14 7L7 14M14 12L12 14" stroke="#78C2E9" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
         </div>
       </section>
 
-      <!-- Right Column: Mode Pills & AUTO FIX Button -->
+      <!-- Right Column: Mode Pills, DOCUMENTATION Button & AUTO FIX Button -->
       <aside class="editor-right-column">
         <!-- Top Mode Pills Stack -->
         <div class="mode-pills-stack">
           <button class="btn-mode-pill concurrency" data-mode="CONCURRENCY" title="Concurrency & Load Engine">CONCURENCY</button>
           <button class="btn-mode-pill fuzzy" data-mode="FUZZY" title="Validation & Fuzzing Engine">FUZZY</button>
           <button class="btn-mode-pill sequence" data-mode="SEQUENCE" title="Sequence Simulation Engine">SEQUENCE</button>
+        </div>
+
+        <!-- Middle Action: Documentation Split Button (Placed above AUTO FIX, Coloured White) -->
+        <div class="docs-btn-wrap">
+          <button id="btnDocsToggle" class="btn-docs-pill" title="Toggle Documentation Reference (Split Screen)">
+            <span>DOCUMENTATION</span>
+          </button>
         </div>
 
         <!-- Bottom: Exact Vector AUTO FIX Button (Figma Prototype Exact) -->

@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Results & Metrics - API Integration Platform</title>
 
+  <script>
+    try {
+      var theme = localStorage.getItem('app_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) {}
+  </script>
+
   <link rel="stylesheet" href="css/global.css">
   <link rel="stylesheet" href="css/result.css">
 </head>
@@ -16,12 +23,38 @@
          TOP BAR: HOME RETURN, CONNECTED NODE CHAIN, TITLE BADGE
          ========================================================================== -->
     <header class="result-top-bar">
-      <!-- Left: Home Return Button -->
-      <a href="index.html?from=result" class="btn-home-circle" title="Return to Homepage">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-        </svg>
-      </a>
+      <!-- Left: Home Return Button & Theme Toggle -->
+      <div class="result-top-left-group">
+        <a href="index.html?from=result" class="btn-home-circle" title="Return to Homepage">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+          </svg>
+        </a>
+        <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Toggle Light and Dark Mode" title="Toggle Theme (Light / Dark)">
+          <span class="theme-toggle-pill">
+            <span class="theme-icon-slot theme-sun" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+            </span>
+            <span class="theme-icon-slot theme-moon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </span>
+            <span class="theme-toggle-thumb"></span>
+          </span>
+          <span class="theme-toggle-text">LIGHT</span>
+        </button>
+      </div>
 
       <!-- Center: Curved Bezier Node Chain (CONCURRENCY ~ FUZZY ~ SEQUENCE) -->
       <svg class="node-chain-svg" viewBox="100 10 440 60">

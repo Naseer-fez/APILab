@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Documentation - API Integration Platform</title>
+
+  <script>
+    try {
+      var theme = localStorage.getItem('app_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) {}
+  </script>
+
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/docs.css">
+</head>
+<body>
+
+  <div class="app-viewport">
+    
+    <!-- ==========================================================================
+         TOP BAR: SINGLE CLEAN BACK NAVIGATION, TITLE BADGE & EDITOR QUICK LINK
+         ========================================================================== -->
+    <header class="docs-top-bar">
+      <!-- Left: Single Consistent Go Back Button & Theme Toggle -->
+      <div class="docs-top-left-group">
+        <button id="btnGoBack" type="button" class="btn-top-back" title="Go back to previous page">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+          <span>BACK</span>
+        </button>
+        <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Toggle Light and Dark Mode" title="Toggle Theme (Light / Dark)">
+          <span class="theme-toggle-pill">
+            <span class="theme-icon-slot theme-sun" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+            </span>
+            <span class="theme-icon-slot theme-moon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </span>
+            <span class="theme-toggle-thumb"></span>
+          </span>
+          <span class="theme-toggle-text">LIGHT</span>
+        </button>
+      </div>
+
+      <!-- Center: Stadium Pill Badge -->
+      <div class="top-bar-center">
+        <div class="editor-badge-pill">
+          <span>API DOCUMENTATION</span>
+        </div>
+      </div>
+
+      <!-- Right: Direct Link to JSON Editor -->
+      <a href="jsoneditor.html?splitDocs=true" class="action-pill-btn btn-editor" title="Open JSON Editor in Split Screen View">
+        <span>EDITOR</span>
+      </a>
+    </header>
+
+    <!-- ==========================================================================
+         MAIN WORKSPACE: DOCUMENTATION GLASS CARD
+         ========================================================================== -->
+    <main class="docs-layout">
+      
+      <section class="docs-main-card glass-card">
+        
+        <!-- Header: Mode Selector Tabs & Copy Action (Consistent with JSON Editor) -->
+        <div class="docs-card-header">
+          <div class="docs-header-left">
+            <span class="docs-card-title">SPECIFICATION</span>
+            <div class="docs-mode-tabs">
+              <button class="docs-tab-btn active" data-mode="CONCURRENCY" title="Concurrency &amp; Load Engine Documentation">CONCURRENCY</button>
+              <button class="docs-tab-btn" data-mode="FUZZY" title="Validation &amp; Fuzzing Engine Documentation">FUZZY</button>
+              <button class="docs-tab-btn" data-mode="SEQUENCE" title="Sequence Simulation Engine Documentation">SEQUENCE</button>
+              <button class="docs-tab-btn" data-mode="RESULTS" title="Query Results API Documentation">RESULTS</button>
+            </div>
+          </div>
+          
+          <button id="btnCopyDocs" class="action-pill-btn btn-copy" title="Copy documentation specification to clipboard">
+            <span>COPY</span>
+          </button>
+        </div>
+
+        <!-- Body: Documentation Content -->
+        <div id="docsContentBody" class="docs-card-body custom-scrollable">
+          <div class="docs-loading-state">
+            <div class="docs-spinner"></div>
+            <span>Loading documentation...</span>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- Mounting Container for Notice, Error, and Success Info Boxes -->
+  <div id="infoBoxContainer"></div>
+
+  <script src="js/global.js"></script>
+  <script src="js/docs.js"></script>
+</body>
+</html>

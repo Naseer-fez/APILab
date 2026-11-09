@@ -640,6 +640,12 @@ async function handleRun() {
   }
   window.appState.saveResult(resultData);
 
+  // Invalidate old cached results and prefetch fresh data immediately
+  if (window.dataCache) {
+    window.dataCache.clearResults();
+    window.dataCache.prefetch(['/api/results/page/1', '/api/results/0']);
+  }
+
   // Floating Notification with real backend numbers
   const reqCount = resultData.metrics?.latency?.count ?? resultData.metrics?.summary?.totalRequestsSent ?? 0;
   const avgMs = resultData.metrics?.latency?.averageMs ?? resultData.metrics?.latency?.average ?? 0;

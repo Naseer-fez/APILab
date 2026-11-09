@@ -4,24 +4,92 @@
 
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Plus+Jakarta+Sans:wght@500;700;800;900&display=swap');
 
-:root {
-  /* Canvas & Surface Tokens */
+:root,
+[data-theme="light"] {
+  /* Canvas & Surface Tokens (Figma Light Prototype) */
   --canvas-bg: #D9D9D9;
   --glass-bg: rgba(217, 217, 217, 0.76);
-  --glass-border: rgba(255, 255, 255, 0.35);
+  --glass-border: rgba(255, 255, 255, 0.45);
   --dark-glass-bg: rgba(18, 22, 28, 0.94);
-  --card-shadow: 0 20px 48px rgba(0, 0, 0, 0.55);
+  --card-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
 
-  /* Top Triangle Navbar Palette */
+  /* Background Wallpaper / Atmospheric Wash */
+  --app-bg-color: #D9D9D9;
+  --app-viewport-bg: url('../assets/backgorundjpeg.jpg');
+
+  /* Typography */
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --text-on-dark: #FFFFFF;
+
+  /* Header & Stadium Pill Tokens */
+  --header-badge-bg: rgba(217, 217, 217, 0.85);
+  --header-badge-border: #1a7f7a;
+  --header-badge-text: #1A1A1A;
+  --home-btn-icon: #1A1A1A;
+
+  /* Top Navbar Pill Base */
+  --nav-pill-base-fill: var(--canvas-bg);
+  --navbar-pill-border: #1a7f7a;
+
+  /* White Item Cards (History & Result pages adapt to slate in dark mode) */
+  --item-card-bg: #FFFFFF;
+  --item-card-border: rgba(0, 0, 0, 0.12);
+  --item-card-text: #0F172A;
+  --item-card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --item-card-hover-border: #0A6563;
+
+  /* Sub-panels & Toolbars */
+  --sub-panel-bg: rgba(255, 255, 255, 0.5);
+  --sub-panel-border: rgba(0, 0, 0, 0.08);
+
+  /* Result & Metrics Cards */
+  --result-display-bg: #DBD9D9;
+  --result-display-border: #090745;
+  --available-metrics-bg: #DBD9D9;
+  --available-metrics-border: #000000;
+
+  /* Chain Branch / Secondary Inputs */
+  --chain-bracket-color: #1A1A1A;
+  --chain-colon-color: #222222;
+  --btn-chain-bg: rgba(255, 255, 255, 0.65);
+  --btn-chain-text: #1A1A1A;
+  --btn-chain-border: rgba(0, 0, 0, 0.2);
+  --branch-node-bg: rgba(255, 255, 255, 0.12);
+  --branch-node-border: rgba(0, 0, 0, 0.08);
+  --endpoint-badge-text: #222222;
+  --endpoint-pill-bg: rgba(0, 0, 0, 0.1);
+  --endpoint-pill-color: #0A6563;
+  --endpoint-pill-border: rgba(10, 101, 99, 0.25);
+
+  /* Mode Switcher Tabs */
+  --tab-track-bg: rgba(0, 0, 0, 0.12);
+  --tab-track-border: rgba(0, 0, 0, 0.15);
+  --tab-btn-text: #333333;
+
+  /* Loader */
+  --loader-bg: #D9D9D9;
+
+  /* Theme Toggle Button Specifics */
+  --toggle-bg: rgba(217, 217, 217, 0.85);
+  --toggle-border: #1a7f7a;
+  --toggle-text: #0F172A;
+  --toggle-track-bg: rgba(0, 0, 0, 0.12);
+  --toggle-thumb-bg: #F59E0B;
+  --toggle-thumb-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+  --toggle-icon-active: #FFFFFF;
+  --toggle-icon-inactive: #64748B;
+
+  /* Top Triangle Navbar Palette (Preserved) */
   --color-concurrency: #731C61;
   --stroke-concurrency: #5E0C22;
   --color-fuzzy: #376D33;
   --stroke-fuzzy: #342222;
   --color-sequence: #0A6563;
   --stroke-sequence: #5E0C22;
-  --navbar-pill-border: #1a7f7a;
 
-  /* Right Action Pills Palette (homepagesvg.svg Exact) */
+  /* Right Action Pills Palette (homepagesvg.svg Exact - Preserved) */
   --pill-run-bg: #73412A;
   --pill-run-border: #67752C;
   --pill-result-bg: #2A6B73;
@@ -31,7 +99,7 @@
   --pill-editor-bg: #732A2A;
   --pill-editor-border: #2C6975;
 
-  /* Auxiliary Buttons (homepagesvg.svg & jsoneditorsvg.svg Exact) */
+  /* Auxiliary Buttons (Preserved) */
   --btn-format-bg: #2A734E;
   --btn-format-border: #2C3175;
   --btn-paste-bg: #2A6B73;
@@ -43,6 +111,83 @@
   /* Typography */
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+[data-theme="dark"] {
+  /* Canvas & Surface Tokens (Deep Atmospheric Dark Mode) */
+  --canvas-bg: #0F1218;
+  --glass-bg: rgba(18, 22, 28, 0.88);
+  --glass-border: rgba(120, 194, 233, 0.22);
+  --dark-glass-bg: rgba(10, 14, 20, 0.94);
+  --card-shadow: 0 20px 48px rgba(0, 0, 0, 0.8), 0 0 1px rgba(120, 194, 233, 0.25);
+
+  /* Background Wallpaper / Atmospheric Wash */
+  --app-bg-color: #0F1218;
+  --app-viewport-bg: radial-gradient(circle at 50% 25%, rgba(20, 26, 38, 0.78) 0%, rgba(10, 14, 20, 0.95) 100%), url('../assets/backgorundjpeg.jpg');
+
+  /* Typography (High contrast light typography) */
+  --text-primary: #F1F5F9;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-on-dark: #FFFFFF;
+
+  /* Header & Stadium Pill Tokens */
+  --header-badge-bg: rgba(18, 22, 28, 0.88);
+  --header-badge-border: #1a7f7a;
+  --header-badge-text: #F1F5F9;
+  --home-btn-icon: #F1F5F9;
+
+  /* Top Navbar Pill Base */
+  --nav-pill-base-fill: rgba(18, 22, 28, 0.95);
+  --navbar-pill-border: #1a7f7a;
+
+  /* White Item Cards adapt to dark slate #1E2430 in dark mode */
+  --item-card-bg: #1E2430;
+  --item-card-border: rgba(255, 255, 255, 0.12);
+  --item-card-text: #F1F5F9;
+  --item-card-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --item-card-hover-border: #78C2E9;
+
+  /* Sub-panels & Toolbars */
+  --sub-panel-bg: rgba(18, 22, 28, 0.65);
+  --sub-panel-border: rgba(255, 255, 255, 0.1);
+
+  /* Result & Metrics Cards */
+  --result-display-bg: rgba(18, 22, 28, 0.92);
+  --result-display-border: rgba(120, 194, 233, 0.25);
+  --available-metrics-bg: rgba(18, 22, 28, 0.92);
+  --available-metrics-border: rgba(255, 255, 255, 0.18);
+
+  /* Chain Branch / Secondary Inputs */
+  --chain-bracket-color: #F1F5F9;
+  --chain-colon-color: #CBD5E1;
+  --btn-chain-bg: rgba(30, 41, 59, 0.8);
+  --btn-chain-text: #F1F5F9;
+  --btn-chain-border: rgba(255, 255, 255, 0.15);
+  --branch-node-bg: rgba(255, 255, 255, 0.05);
+  --branch-node-border: rgba(255, 255, 255, 0.1);
+  --endpoint-badge-text: #CBD5E1;
+  --endpoint-pill-bg: rgba(10, 101, 99, 0.25);
+  --endpoint-pill-color: #78C2E9;
+  --endpoint-pill-border: rgba(120, 194, 233, 0.3);
+
+  /* Mode Switcher Tabs */
+  --tab-track-bg: rgba(0, 0, 0, 0.35);
+  --tab-track-border: rgba(255, 255, 255, 0.12);
+  --tab-btn-text: #CBD5E1;
+
+  /* Loader */
+  --loader-bg: #0F1218;
+
+  /* Theme Toggle Button Specifics */
+  --toggle-bg: rgba(18, 22, 28, 0.88);
+  --toggle-border: #1a7f7a;
+  --toggle-text: #F1F5F9;
+  --toggle-track-bg: rgba(0, 0, 0, 0.4);
+  --toggle-thumb-bg: #38BDF8;
+  --toggle-thumb-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+  --toggle-icon-active: #FFFFFF;
+  --toggle-icon-inactive: #64748B;
 }
 
 /* ==========================================================================
@@ -59,11 +204,12 @@ html, body {
   height: 100vh;
   overflow: hidden; /* Screen Adaptation: Page scrolling is locked */
   font-family: var(--font-sans);
-  color: #FFFFFF;
-  background-color: #121418;
+  color: var(--text-primary);
+  background-color: var(--app-bg-color);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   user-select: none;
+  transition: background-color 0.35s ease, color 0.35s ease;
 }
 
 /* Abstract Texture Background */
@@ -72,7 +218,8 @@ html, body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background-image: url('../assets/backgorundjpeg.jpg');
+  background-color: var(--app-bg-color);
+  background-image: var(--app-viewport-bg);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -80,6 +227,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
+  transition: background-color 0.35s ease, background-image 0.35s ease;
 }
 
 /* ==========================================================================
@@ -100,10 +248,11 @@ html, body {
 }
 
 .nav-pill-base {
-  fill: var(--canvas-bg);
+  fill: var(--nav-pill-base-fill);
   stroke: var(--navbar-pill-border);
   stroke-width: 3.5px;
   rx: 31px;
+  transition: fill 0.35s ease, stroke 0.35s ease;
 }
 
 .nav-btn {
@@ -168,6 +317,7 @@ html, body {
   border: 1.5px solid var(--glass-border);
   box-shadow: var(--card-shadow);
   position: relative;
+  transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
 }
 
 /* ==========================================================================
@@ -236,6 +386,23 @@ html, body {
   height: 48px;
 }
 
+.btn-docs-home {
+  background-color: var(--item-card-bg);
+  border-color: #1a7f7a;
+  color: var(--item-card-text);
+  width: 130px;
+  height: 48px;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s ease;
+}
+
+.btn-docs-home:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.55), 0 0 12px rgba(26, 127, 122, 0.45);
+}
+
 .btn-format {
   background-color: var(--btn-format-bg);
   border-color: var(--btn-format-border);
@@ -285,8 +452,8 @@ html, body {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: rgba(217, 217, 217, 0.85);
-  border: 3px solid #1a7f7a;
+  background: var(--header-badge-bg);
+  border: 3px solid var(--header-badge-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -305,7 +472,166 @@ html, body {
 .btn-home-circle svg {
   width: 24px;
   height: 24px;
-  fill: #1A1A1A;
+  fill: var(--home-btn-icon);
+  transition: fill 0.3s ease;
+}
+
+/* ==========================================================================
+   THEME TOGGLE BUTTON & TOP NAVIGATION WRAPPERS
+   ========================================================================== */
+.top-left-theme-toggle {
+  position: absolute;
+  top: 18px;
+  left: 24px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+}
+
+.header-theme-toggle-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.result-top-left-group,
+.docs-top-left-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--toggle-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 2.5px solid var(--toggle-border);
+  border-radius: 9999px;
+  padding: 5px 14px 5px 6px;
+  height: 42px;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              filter 0.2s ease,
+              box-shadow 0.25s ease,
+              background 0.3s ease,
+              border-color 0.3s ease;
+  user-select: none;
+}
+
+.theme-toggle-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  filter: brightness(1.15);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 12px rgba(26, 127, 122, 0.4);
+}
+
+.theme-toggle-btn:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+/* Stadium Pill Track */
+.theme-toggle-pill {
+  position: relative;
+  width: 54px;
+  height: 28px;
+  background: var(--toggle-track-bg);
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+/* Sliding Thumb Capsule */
+.theme-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--toggle-thumb-bg);
+  box-shadow: var(--toggle-thumb-shadow);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background 0.3s ease,
+              box-shadow 0.3s ease;
+  z-index: 1;
+}
+
+/* When dark mode is active, thumb glides smoothly to the right */
+[data-theme="dark"] .theme-toggle-thumb,
+.theme-toggle-btn.is-dark .theme-toggle-thumb {
+  transform: translateX(26px);
+}
+
+/* Sun and Moon icon slots */
+.theme-icon-slot {
+  position: relative;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.25s ease, transform 0.25s ease, color 0.25s ease;
+}
+
+.theme-icon-slot svg {
+  display: block;
+}
+
+.theme-icon-slot.theme-sun {
+  color: #1A1A1A;
+}
+
+.theme-icon-slot.theme-moon {
+  color: #94A3B8;
+}
+
+/* Active states for icons */
+[data-theme="light"] .theme-icon-slot.theme-sun,
+.theme-toggle-btn.is-light .theme-icon-slot.theme-sun {
+  color: #FFFFFF;
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+[data-theme="light"] .theme-icon-slot.theme-moon,
+.theme-toggle-btn.is-light .theme-icon-slot.theme-moon {
+  opacity: 0.42;
+  color: #475569;
+  transform: scale(0.88);
+}
+
+[data-theme="dark"] .theme-icon-slot.theme-sun,
+.theme-toggle-btn.is-dark .theme-icon-slot.theme-sun {
+  opacity: 0.42;
+  color: #64748B;
+  transform: scale(0.88);
+}
+
+[data-theme="dark"] .theme-icon-slot.theme-moon,
+.theme-toggle-btn.is-dark .theme-icon-slot.theme-moon {
+  color: #FFFFFF;
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+/* Text label */
+.theme-toggle-text {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 11.5px;
+  letter-spacing: 1px;
+  color: var(--toggle-text);
+  min-width: 42px;
+  text-align: left;
+  transition: color 0.3s ease;
 }
 
 /* ==========================================================================

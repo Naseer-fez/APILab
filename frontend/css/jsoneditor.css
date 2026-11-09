@@ -25,17 +25,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(217, 217, 217, 0.72);
+  background: var(--header-badge-bg);
   backdrop-filter: blur(16px);
-  border: 3px solid #1a7f7a;
+  border: 3px solid var(--header-badge-border);
   border-radius: 9999px;
   padding: 8px 36px;
   font-family: var(--font-sans);
   font-weight: 900;
   font-size: 15px;
   letter-spacing: 2px;
-  color: #1A1A1A;
+  color: var(--header-badge-text);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  transition: all 0.25s ease;
 }
 
 /* Main Layout Grid */
@@ -55,10 +56,44 @@
   flex: 1;
   max-width: 860px;
   height: 520px;
+  min-width: 320px;
+  min-height: 280px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border-radius: 32px;
+  resize: both;
+}
+
+/* Resize handle indicator */
+.code-editor-card::-webkit-resizer {
+  background: linear-gradient(135deg, transparent 60%, rgba(10, 101, 99, 0.5) 60%, rgba(10, 101, 99, 0.5) 70%, transparent 70%, transparent 80%, rgba(10, 101, 99, 0.5) 80%);
+  border-radius: 0 0 32px 0;
+}
+
+/* Corner Resize Grip */
+.editor-resize-handle {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  width: 20px;
+  height: 20px;
+  cursor: nwse-resize;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 14, 18, 0.7);
+  border-radius: 6px;
+  opacity: 0.65;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  user-select: none;
+}
+
+.editor-resize-handle:hover {
+  opacity: 1;
+  background: rgba(10, 101, 99, 0.85);
+  transform: scale(1.1);
 }
 
 /* Card Header */
@@ -68,7 +103,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1.5px solid rgba(255, 255, 255, 0.22);
+  border-bottom: 1.5px solid var(--sub-panel-border);
+  transition: border-color 0.25s ease;
 }
 
 .btn-copy {
@@ -227,4 +263,274 @@
 
 .btn-autofix-exact:active {
   transform: scale(0.94);
+}
+
+/* ==========================================================================
+   DOCUMENTATION BUTTON (PLACED ABOVE AUTO FIX, COLOURED WHITE)
+   ========================================================================== */
+.docs-btn-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 14px;
+  margin-bottom: 8px;
+}
+
+.btn-docs-pill {
+  width: 140px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #FFFFFF;
+  border: 3.5px solid #1a7f7a;
+  border-radius: 9999px;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  color: #1A1A1A;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              filter 0.2s ease, 
+              box-shadow 0.2s ease, 
+              border-color 0.2s ease;
+  user-select: none;
+  outline: none;
+}
+
+.btn-docs-pill:hover {
+  transform: translateY(-2px) scale(1.04);
+  filter: brightness(1.05);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.55), 0 0 12px rgba(26, 127, 122, 0.4);
+}
+
+.btn-docs-pill:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+.btn-docs-pill.active {
+  border-color: #0A6563;
+  box-shadow: 0 0 16px rgba(10, 101, 99, 0.7);
+  background: #F4FAF9;
+}
+
+/* ==========================================================================
+   SPLIT SCREEN LAYOUT (50% DOCS / 50% JSON EDITOR)
+   ========================================================================== */
+.editor-layout.docs-split-active {
+  max-width: 1320px;
+  gap: 20px;
+  transition: max-width 0.3s ease, gap 0.3s ease;
+}
+
+.editor-layout.docs-split-active .editor-docs-card {
+  display: flex !important;
+  flex: 1 1 50%;
+  min-width: 0;
+  height: 520px;
+}
+
+.editor-layout.docs-split-active .code-editor-card {
+  max-width: none;
+  flex: 1 1 50%;
+  min-width: 0;
+}
+
+/* Documentation Split Glass Card */
+.editor-docs-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 32px;
+  height: 520px;
+  min-width: 280px;
+  min-height: 260px;
+  resize: both;
+  position: relative;
+  animation: splitSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.editor-docs-card::-webkit-resizer {
+  background: linear-gradient(135deg, transparent 60%, rgba(10, 101, 99, 0.5) 60%, rgba(10, 101, 99, 0.5) 70%, transparent 70%, transparent 80%, rgba(10, 101, 99, 0.5) 80%);
+  border-radius: 0 0 32px 0;
+}
+
+@keyframes splitSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* Split Card Header */
+.docs-split-header {
+  height: 60px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.22);
+  gap: 12px;
+}
+
+.docs-split-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.docs-split-badge-title {
+  font-family: var(--font-sans);
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 1.5px;
+  color: #1A1A1A;
+}
+
+.split-docs-mode-badge {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  color: #FFFFFF;
+}
+
+.split-docs-mode-badge.concurrency {
+  background: #731C61;
+}
+
+.split-docs-mode-badge.fuzzy {
+  background: #376D33;
+}
+
+.split-docs-mode-badge.sequence {
+  background: #0A6563;
+}
+
+.docs-split-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Maximize Pill Button */
+.btn-maximize-pill {
+  background-color: #0A6563;
+  border-color: #5E0C22;
+  color: #FFFFFF;
+  padding: 5px 12px;
+  font-size: 10.5px;
+  border-width: 2.5px;
+  gap: 5px;
+}
+
+.btn-maximize-pill:hover {
+  filter: brightness(1.25);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+}
+
+.btn-docs-close-icon {
+  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  color: #1A1A1A;
+  font-size: 18px;
+  font-weight: 800;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  line-height: 1;
+  padding-bottom: 2px;
+}
+
+.btn-docs-close-icon:hover {
+  background: #E50914;
+  color: #FFFFFF;
+  border-color: #E50914;
+  transform: scale(1.1);
+}
+
+/* Split Card Body */
+.docs-split-body {
+  flex: 1;
+  background: var(--dark-glass-bg);
+  border-radius: 0 0 32px 32px;
+  padding: 16px 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  user-select: text !important;
+}
+
+.docs-split-pre {
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  color: #78C2E9;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-y: auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(10, 101, 99, 0.65) transparent;
+}
+
+.docs-split-pre::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.docs-split-pre::-webkit-scrollbar-thumb {
+  background: rgba(10, 101, 99, 0.65);
+  border-radius: 9999px;
+}
+
+.docs-split-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: #FFFFFF;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 20px;
+}
+
+.docs-split-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: #78C2E9;
+  font-size: 12px;
+}
+
+.docs-mini-spinner {
+  width: 26px;
+  height: 26px;
+  border: 2.5px solid rgba(120, 194, 233, 0.25);
+  border-top-color: #78C2E9;
+  border-radius: 50%;
+  animation: docsSpin 0.8s linear infinite;
 }

@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnPrevPage = document.getElementById('btnPrevPage');
   const btnNextPage = document.getElementById('btnNextPage');
   const pageIndicator = document.getElementById('pageIndicator');
+  const pageSlider = document.getElementById('pageSlider');
 
   // Internal state
   let currentSource = 'backend'; // 'backend' | 'local'
@@ -89,6 +90,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Page Slider Events: Real-time scrubbing & jumping
+  pageSlider?.addEventListener('input', (e) => {
+    const targetPage = parseInt(e.target.value, 10);
+    if (pageIndicator) pageIndicator.textContent = `Page ${targetPage} of ${totalPages || 1}`;
+  });
+
+  pageSlider?.addEventListener('change', (e) => {
+    const targetPage = parseInt(e.target.value, 10);
+    if (targetPage !== currentPage && targetPage >= 1 && targetPage <= totalPages) {
+      fetchBackendPage(targetPage);
+    }
+  });
+
   // Comparator Selector Events
   selectRunA?.addEventListener('change', () => updateComparison(getActiveRunsList()));
   selectRunB?.addEventListener('change', () => updateComparison(getActiveRunsList()));
@@ -107,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         type: 'notice',
         title: 'NO RUN SELECTED',
         message: 'Data not available yet. Please select a valid run to inspect.',
-        duration: 3500
+        duration: 2000
       });
     }
   });
@@ -124,11 +138,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const res = await fetch(`/api/results/page/${pageNo}`);
-      if (!res.ok) {
-        throw new Error(`HTTP error ${res.status}`);
-      }
-      const json = await res.json();
+      const url = `/api/results/page/${pageNo}`;
+      const json = window.dataCache
+        ? await window.dataCache.fetchWithCache(url)
+        : await (await fetch(url)).json();
+
       currentPage = pageNo;
 
       // Parse Total pages from message: "Total pages: X"
@@ -140,6 +154,12 @@ document.addEventListener('DOMContentLoaded', () => {
       backendRuns = rawList.map((item, idx) => normalizeBackendRecord(item, pageNo, idx));
       backendFailed = false;
       applyFiltersAndRender();
+
+      // Proactively prefetch adjacent pages in the background for zero-lag pagination
+      if (window.dataCache) {
+        if (pageNo < totalPages) window.dataCache.prefetch(`/api/results/page/${pageNo + 1}`);
+        if (pageNo > 1) window.dataCache.prefetch(`/api/results/page/${pageNo - 1}`);
+      }
     } catch (err) {
       console.warn('Backend fetch failed, falling back to local history:', err);
       backendFailed = true;
@@ -246,6 +266,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (pageIndicator) pageIndicator.textContent = `Page ${currentPage} of ${totalPages || 1}`;
       if (btnPrevPage) btnPrevPage.disabled = currentPage <= 1;
       if (btnNextPage) btnNextPage.disabled = currentPage >= totalPages;
+      if (pageSlider) {
+        pageSlider.min = 1;
+        pageSlider.max = Math.max(totalPages, 1);
+        pageSlider.value = currentPage;
+        pageSlider.disabled = totalPages <= 1;
+      }
     } else {
       paginationBar.style.display = 'none';
     }
