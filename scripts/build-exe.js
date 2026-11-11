@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { generateFrontendEmbed } from './generate-frontend-embed.js';
 
 const projectRoot = process.cwd();
 const distDir = path.join(projectRoot, 'dist');
@@ -88,6 +89,9 @@ function getPostjectBin() {
     return 'npx postject';
 }
 
+// 3.5 Generate embedded in-memory frontend assets
+generateFrontendEmbed();
+
 // 4. Bundle JavaScript source with esbuild
 console.log('[BUILD] Bundling JavaScript sources via esbuild...');
 const esbuildBin = getEsbuildBin();
@@ -107,7 +111,7 @@ fs.writeFileSync(seaConfigFile, JSON.stringify(seaConfig, null, 2));
 
 // 6. Generate SEA prep blob
 console.log('[BUILD] Generating SEA preparation blob...');
-execSync(`node --experimental-sea-config "${seaConfigFile}"`, {
+execSync(`"${process.execPath}" --experimental-sea-config "${seaConfigFile}"`, {
     stdio: 'inherit'
 });
 
@@ -230,11 +234,14 @@ async function buildTargets() {
         console.log(`[TARGET] Binary created: ${targetOutput}`);
     }
 
-    // 8. Deploy frontend static assets
-    console.log('\n[DEPLOY] Copying frontend static assets to dist/frontend...');
+    // 8. Deploy frontend static assets (excluding non-production design/mockup folders)
+    console.log('\n[DEPLOY] Copying clean frontend static assets to dist/frontend...');
     const frontendSrc = path.join(projectRoot, 'frontend');
     const frontendDist = path.join(distDir, 'frontend');
-    fs.cpSync(frontendSrc, frontendDist, { recursive: true });
+    fs.cpSync(frontendSrc, frontendDist, {
+        recursive: true,
+        filter: (src) => !src.includes('Mainpage') && !src.includes('node_modules')
+    });
 
     // 9. Clean up temporary build files
     console.log('[CLEANUP] Removing intermediate build artifacts...');

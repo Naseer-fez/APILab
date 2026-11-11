@@ -63,14 +63,46 @@ app.use('/tests', seqtestendpnt);
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { embeddedFrontend } from './embedded-frontend.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendPath = [
     path.join(__dirname, '../../frontend/'),
     path.join(path.dirname(process.execPath), 'frontend/'),
     path.join(process.cwd(), 'frontend/')
-].find(p => fs.existsSync(p)) || path.join(__dirname, '../../frontend/');
-app.use(express.static(frontendPath));
+].find(p => fs.existsSync(p));
+if (frontendPath) {
+    app.use(express.static(frontendPath));
+}
+
+// 2. Embedded in-memory frontend fallback (ensures UI works in standalone executables even if frontend folder is deleted or missing)
+app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        return next();
+    }
+
+    let reqPath = req.path;
+    if (reqPath === '/' || reqPath === '') {
+        reqPath = '/index.html';
+    }
+
+    // Direct match
+    let asset = embeddedFrontend[reqPath];
+
+    // If no extension, try matching with .html (e.g. /history -> /history.html)
+    if (!asset && !path.extname(reqPath)) {
+        asset = embeddedFrontend[`${reqPath}.html`];
+    }
+
+    if (asset) {
+        res.setHeader('Content-Type', asset.type);
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        const buffer = asset.isBinary ? Buffer.from(asset.content, 'base64') : Buffer.from(asset.content, 'utf8');
+        return res.send(buffer);
+    }
+
+    next();
+});
 
 
 

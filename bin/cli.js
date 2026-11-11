@@ -118,7 +118,7 @@ const main = async () => {
         console.log("This will fetch all historical test results that were successful.");
         console.log("reulstno will fetch the result by result number");
     }
-    else if (command === 'docement') {
+    else if (command === 'document') {
         const availbeendpoint = ["fuzzy", "concurrency", "sequence"]
         console.log("Documentation Usage: node cli.js document <document>");
         console.log("Valid Documents are");
