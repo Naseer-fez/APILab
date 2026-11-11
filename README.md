@@ -62,4 +62,4 @@ import {
 
 ## License
 
-ISC
+MIT

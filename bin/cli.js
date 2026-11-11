@@ -101,7 +101,7 @@ const main = async () => {
         console.log("  results <query>      Fetch historical test results with the provided payload");
         console.log("  recent <query>       Fetch recent test results with the provided payload<last 5 results>");
         console.log("  for query help use 'query'");
-        console.log("  for documenation help use 'document' <endpoint>");
+        console.log("  for documentation help use 'document' <endpoint>");
         console.log("  start <port>           Start the server and UI on Localhost.");
         console.log("  network <port>         Start the server and UI on your network for other users along with localhost.");
         console.log("  help                   Show this help message");
@@ -116,13 +116,13 @@ const main = async () => {
         });
         console.log("Example: node cli.js results success");
         console.log("This will fetch all historical test results that were successful.");
-        console.log("reulstno will fetch the result by result number");
+        console.log("resultno will fetch the result by result number");
     }
     else if (command === 'document') {
         const availbeendpoint = ["fuzzy", "concurrency", "sequence"]
         console.log("Documentation Usage: node cli.js document <document>");
         console.log("Valid Documents are");
-        availbeendpoint.forEach((docs) => { console.log(`-${docs}`) })
+        availbeendpoint.forEach((docs) => { console.log(`  - ${docs}`) })
         console.log("Example: node cli.js document fuzzy");
 
 

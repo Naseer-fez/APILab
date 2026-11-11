@@ -15,7 +15,7 @@
 
   /* Background Wallpaper / Atmospheric Wash */
   --app-bg-color: #D9D9D9;
-  --app-viewport-bg: url('../assets/backgorundjpeg.jpg');
+  --app-viewport-bg: radial-gradient(circle at 50% 20%, #E8EEF5 0%, #D5DFE8 100%);
 
   /* Typography */
   --text-primary: #0F172A;
@@ -123,7 +123,7 @@
 
   /* Background Wallpaper / Atmospheric Wash */
   --app-bg-color: #0F1218;
-  --app-viewport-bg: radial-gradient(circle at 50% 25%, rgba(20, 26, 38, 0.78) 0%, rgba(10, 14, 20, 0.95) 100%), url('../assets/backgorundjpeg.jpg');
+  --app-viewport-bg: radial-gradient(circle at 50% 25%, #161D27 0%, #0A0E14 100%);
 
   /* Typography (High contrast light typography) */
   --text-primary: #F1F5F9;

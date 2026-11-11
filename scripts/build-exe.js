@@ -238,9 +238,12 @@ async function buildTargets() {
     console.log('\n[DEPLOY] Copying clean frontend static assets to dist/frontend...');
     const frontendSrc = path.join(projectRoot, 'frontend');
     const frontendDist = path.join(distDir, 'frontend');
+    if (fs.existsSync(frontendDist)) {
+        fs.rmSync(frontendDist, { recursive: true, force: true });
+    }
     fs.cpSync(frontendSrc, frontendDist, {
         recursive: true,
-        filter: (src) => !src.includes('Mainpage') && !src.includes('node_modules')
+        filter: (src) => !src.includes('Mainpage') && !src.includes('website') && !src.includes('assets') && !src.includes('node_modules')
     });
 
     // 9. Clean up temporary build files

@@ -83,7 +83,7 @@ data
 "concurency": 100 this will be the number of requests at an instance of time
 "increment": 10  this will be the number of requests that will be increased over time
 "interval":  1000  <ms> this will be the amount of time the server will wait until it restarts
-"timout": 50000 <ms> The amount of time the server will wait for response because we never know if the server might have crashed
+"timeout": 50000 <ms> The amount of time the server will wait for response because we never know if the server might have crashed
 "requests": this takes the number of requests to be sent to the server in total; default value is 100 
 "isfile": int if 0 then no file, default is zero. If the file is uploaded then the server will change it later
 // if it is true then server will look for the file and raise an error if the file is not found

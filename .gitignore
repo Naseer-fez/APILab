@@ -1,4 +1,4 @@
-﻿
+
 .env
 .env.*
 !.env.example
@@ -38,3 +38,12 @@ backend/uploads/
 frontend/docs/
 docs/
 .npmrc
+*.svg
+*.jpg
+*.png
+*.md
+*.cjs
+*.mjs
+website/
+package.json
+*.ps1
