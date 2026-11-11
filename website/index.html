@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#283d45">
+    <meta name="description" content="API Test Lab — a simple guide to API testing modes, routes, and downloads.">
+    <title>API Test Lab</title>
+
+    <!-- Critical: Anti-FOUC Theme Initialization (Pure Vanilla ES6) -->
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('app_theme') || 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {}
+      })();
+    </script>
+
+    <link rel="icon" type="image/svg+xml" href="./Asset/FAVICON.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@500;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./site-data.js" defer></script>
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <main id="app" class="app" aria-live="polite"></main>
+  </body>
+</html>
