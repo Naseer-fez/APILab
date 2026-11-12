@@ -1,5 +1,5 @@
 // Auto-generated embedded frontend assets. Do not edit directly.
-// Generated on 2026-11-11T09:52:25.722Z
+// Generated on 2026-11-11T10:11:58.039Z
 export const embeddedFrontend = {
   "/css/docs.css": {
     "type": "text/css; charset=utf-8",

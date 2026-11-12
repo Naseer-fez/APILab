@@ -7,6 +7,18 @@ import path from 'node:path';
 
 const args = process.argv.slice(2);
 
+// Check if user requested JSON output mode via 'json' subcommand or '--json' flag
+let isJsonMode = false;
+let cleanArgs = [...args];
+if (cleanArgs[0]?.toLowerCase() === 'json') {
+    isJsonMode = true;
+    cleanArgs.shift();
+}
+if (cleanArgs.includes('--json')) {
+    isJsonMode = true;
+    cleanArgs = cleanArgs.filter(a => a !== '--json');
+}
+
 
 const runtests = {
     api: runApiTest,
@@ -58,38 +70,82 @@ const parsejson = async (input) => {
 
 
 const main = async () => {
-    const command = (args[0] || 'help').toLowerCase();
-    // console.log(command);
+    const command = (cleanArgs[0] || 'help').toLowerCase();
     const testRunner = runtests[command];
     if (testRunner) {
         var payload;
-         if ((testRunner !== runHistoryResults && testRunner !== runRecentResults) && command !=="document") {
-            payload = await parsejson(args[1]);
-        }
-
-        else {
-            payload = args[1] || null;
+        if (command === 'results') {
+            if (!cleanArgs[1]) {
+                payload = { resultno: 0 };
+            } else {
+                try {
+                    payload = JSON.parse(cleanArgs[1]);
+                } catch {
+                    if (!isNaN(Number(cleanArgs[1]))) {
+                        payload = { resultno: Number(cleanArgs[1]) };
+                    } else {
+                        payload = { resultno: 0, [cleanArgs[1]]: true };
+                    }
+                }
+            }
+        } else if (command === 'recent') {
+            if (!cleanArgs[1]) {
+                payload = { pageno: 1 };
+            } else {
+                try {
+                    payload = JSON.parse(cleanArgs[1]);
+                } catch {
+                    payload = { pageno: parseInt(cleanArgs[1], 10) || 1 };
+                }
+            }
+        } else if (command === 'document') {
+            payload = cleanArgs[1] || null;
+        } else {
+            payload = await parsejson(cleanArgs[1]);
         }
         if (!payload) {
-            if (command === 'document') {
-                console.error("No endpoint provided. Use 'document <endpoint>' (e.g. fuzzy, concurrency, sequence).");
+            const errMsg = command === 'document'
+                ? "No endpoint provided. Use 'document <endpoint>' (e.g. fuzzy, concurrency, sequence)."
+                : "No payload provided. Please provide a JSON payload.";
+            if (isJsonMode) {
+                console.log(JSON.stringify({ statusCode: 400, success: false, message: errMsg }, null, 2));
             } else {
-                console.error("No payload provided. Please provide a JSON payload.");
+                console.error(errMsg);
             }
             process.exit(1);
         }
         const result = await testRunner(payload);
-        // console.log("Test Result:", result);
+        if (isJsonMode) {
+            const [message, formatted, statusCode] = result;
+            const isSuccess = statusCode >= 200 && statusCode < 300;
+            console.log(JSON.stringify({
+                statusCode,
+                success: isSuccess,
+                message: typeof message === 'string' ? message : (isSuccess ? "Success" : "Error"),
+                metrics: formatted?.metrics || null,
+                data: formatted?.data || null
+            }, null, 2));
+            if (!isSuccess) process.exit(1);
+            return;
+        }
         return resultsparser(result);
     }
     else if (command === 'start' || command === 'run' ) {
-        const port = args[1] ? parseInt(args[1]) : 3000;
+        const port = cleanArgs[1] ? parseInt(cleanArgs[1]) : 3000;
         startui(port, '127.0.0.1', false);
-    }else if (command === 'network') {
-        const port = args[1] ? parseInt(args[1]) : 3000;
+    } else if (command === 'network') {
+        const port = cleanArgs[1] ? parseInt(cleanArgs[1]) : 3000;
         startui(port, '0.0.0.0', true); 
     }
     else if (command === 'help' || command === '--help' || command === '-h') {
+        if (isJsonMode) {
+            console.log(JSON.stringify({
+                statusCode: 200,
+                success: true,
+                commands: ["fuzzy", "concurrency", "sequence", "results", "recent", "document", "start", "network"]
+            }, null, 2));
+            return;
+        }
         const binName = path.basename(process.argv[1] || 'apitestlab');
         const cmdPrefix = binName.endsWith('.js') ? `node ${binName}` : binName;
         console.log(`Usage: ${cmdPrefix} <command> [payload]`);
@@ -104,10 +160,16 @@ const main = async () => {
         console.log("  for documentation help use 'document' <endpoint>");
         console.log("  start <port>           Start the server and UI on Localhost.");
         console.log("  network <port>         Start the server and UI on your network for other users along with localhost.");
+        console.log("  json <command> [payload] Output pure JSON (e.g. apitestlab json fuzzy '{...}')");
+        console.log("  --json                 Flag to format output as pure JSON");
         console.log("  help                   Show this help message");
     }
     else if (command === 'query') {
-        const validQueries = ["resultno", "success", "failure", "message", "metrics", "data"]
+        const validQueries = ["resultno", "success", "failure", "message", "metrics", "data"];
+        if (isJsonMode) {
+            console.log(JSON.stringify({ statusCode: 200, success: true, queries: validQueries }, null, 2));
+            return;
+        }
         console.log("Query Usage: node cli.js results <query>");
         console.log("The query takes normal inputs")
         console.log("Valid queries are:");
@@ -119,16 +181,23 @@ const main = async () => {
         console.log("resultno will fetch the result by result number");
     }
     else if (command === 'document') {
-        const availbeendpoint = ["fuzzy", "concurrency", "sequence"]
+        const availbeendpoint = ["fuzzy", "concurrency", "sequence"];
+        if (isJsonMode) {
+            console.log(JSON.stringify({ statusCode: 200, success: true, endpoints: availbeendpoint }, null, 2));
+            return;
+        }
         console.log("Documentation Usage: node cli.js document <document>");
         console.log("Valid Documents are");
         availbeendpoint.forEach((docs) => { console.log(`  - ${docs}`) })
         console.log("Example: node cli.js document fuzzy");
-
-
     }
     else {
-        console.error("Invalid command. Use 'help' for usage information.");
+        const errMsg = "Invalid command. Use 'help' for usage information.";
+        if (isJsonMode) {
+            console.log(JSON.stringify({ statusCode: 400, success: false, message: errMsg }, null, 2));
+        } else {
+            console.error(errMsg);
+        }
         process.exit(1);
     }
 }
@@ -193,6 +262,14 @@ const resultsparser = (result) => {
 
 
 main().catch((err) => {
-    console.error('Error:', err);
+    if (isJsonMode) {
+        console.log(JSON.stringify({
+            statusCode: 400,
+            success: false,
+            message: err.message || String(err)
+        }, null, 2));
+    } else {
+        console.error('Error:', err);
+    }
     process.exit(1);
 });

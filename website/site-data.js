@@ -4,11 +4,11 @@
  * DOWNLOADS CONFIGURATION (Single Source of Truth):
  * To change download links for all platforms at once, edit `downloadTemplate` below.
  * '<os>' is the placeholder and will automatically resolve to 'linux', 'windows', or 'macos'.
- * Example: 'https://github.com/Naseer-fez/APILab/releases/download/v1/apitestlab_<os>.zip'
+ * Example: 'https://github.com/Naseer-fez/APITestLab/releases/download/v1/apitestlab_<os>.zip'
  */
 window.API_TEST_LAB_SITE_DATA = {
   // Singular point of change for all OS downloads:
-  downloadTemplate: 'https://github.com/Naseer-fez/APILab/releases/download/v1/apitestlab_<os>.zip',
+  downloadTemplate: 'https://github.com/Naseer-fez/APITestLab/releases/download/v1/apitestlab_<os>.zip',
 
   getDownloadUrl(osKey) {
     const platform = this.platforms?.[osKey];

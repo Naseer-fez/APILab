@@ -47,3 +47,5 @@ docs/
 website/
 package.json
 *.ps1
+__pycache__/
+*.py[cod]
